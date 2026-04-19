@@ -8,6 +8,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="JavaFXGUIServer" />
         <module name="Project3Server" />
+        <module name="HW5Server" />
       </profile>
     </annotationProcessing>
   </component>
