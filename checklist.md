@@ -1,10 +1,11 @@
 - [x] basic running
 - [x] add multithreading to server
 - [x] add chat
-- [ ] add user options (play again, quit game, forfeit)
-- [ ] dynamic UI to reflect user side of the board
-- [ ] user info panel
-- [ ] elo matchmaking
-- [ ] UI actual implementation
 - [ ] json user store
+- [ ] user info panel
 - [ ] add friends
+- [ ] add user options (play again, quit game, forfeit)
+- [ ] UI actual implementation
+- [ ] dynamic UI to reflect user side of the board
+- [ ] elo matchmaking
+
