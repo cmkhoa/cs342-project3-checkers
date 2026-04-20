@@ -1,0 +1,7 @@
+- [x] basic running
+- [ ] dynamic UI to reflect user side of the board
+- [ ] user info panel
+- [ ] elo matchmaking
+- [ ] UI actual implementation
+- [ ] json user store
+- [ ] add friends
