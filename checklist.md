@@ -7,7 +7,7 @@
 - [ ] add user options (play again, quit game, forfeit)
 - [ ] UI actual implementation
 - [ ] dynamic UI to reflect user side of the board
-- [ ] elo matchmaking
+- [ ] elo matchmaking (with normal matching fallback)
 
 optional:
 - [ ] simple how to play panel
