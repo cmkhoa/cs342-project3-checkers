@@ -1,9 +1,12 @@
 - [x] basic running
 - [x] add multithreading to server
 - [x] add chat
+
+- [ ] persistent log in between games ( register button go away if logged in)
 - [ ] json user store
 - [ ] user info panel
 - [ ] add friends
+
 - [ ] add user options (play again, quit game, forfeit)
 - [ ] UI actual implementation
 - [ ] dynamic UI to reflect user side of the board
