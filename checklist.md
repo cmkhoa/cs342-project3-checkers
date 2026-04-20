@@ -9,3 +9,6 @@
 - [ ] dynamic UI to reflect user side of the board
 - [ ] elo matchmaking
 
+optional:
+- [ ] simple how to play panel
+- [ ] settings panel (light/dark, sounds?)
