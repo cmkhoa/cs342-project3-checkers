@@ -1,0 +1,6 @@
+{
+  "users": [
+    {"username":"a","wins":0,"losses":1,"friends":[]},
+    {"username":"b","wins":1,"losses":0,"friends":[]}
+  ]
+}
