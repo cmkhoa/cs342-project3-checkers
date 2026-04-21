@@ -73,7 +73,7 @@ public class MainScene {
 
         // Play local section
         Label playSection = UI.sectionLabel("OFFLINE");
-        Button playLocal = UI.primaryButton("PLAY LOCAL");
+        Button playLocal = UI.primaryButton("Pass & Play");
         playLocal.setOnAction(e -> actions.onPlayLocal());
 
         // Account section
