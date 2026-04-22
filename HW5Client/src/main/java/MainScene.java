@@ -144,6 +144,7 @@ public class MainScene {
         logout.setPadding(new Insets(11, 0, 11, 0));
         logout.setPadding(new Insets(11, 20, 11, 20));
 
+
         VBox logoutBox = new VBox(logout);
         logoutBox.setAlignment(Pos.BOTTOM_CENTER);
         logoutBox.setPadding(new Insets(20, 0, 0, 0));
