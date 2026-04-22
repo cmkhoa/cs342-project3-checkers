@@ -21,7 +21,7 @@ public class ProfileScene {
 
     public static Scene build(String myUsername,
                               String targetUsername,
-                              int wins, int losses, boolean online,
+                              int wins, int losses,int elo, boolean online,
                               boolean isFriend,
                               Actions actions) {
         VBox root = UI.sceneRoot();
@@ -66,7 +66,7 @@ public class ProfileScene {
                 statDivider(),
                 statCell("LOSSES",   hasData ? String.valueOf(losses) : "—"),
                 statDivider(),
-                statCell("WIN RATE", winRateStr)
+                statCell("ELO",      hasData ? String.valueOf(elo)    : "—")   // ADDED
         );
 
         // ── Action buttons ───────────────────────────────────────────────────

@@ -78,6 +78,7 @@ public class Server {
 		// winner and the loser may report GAME_OVER, so we record stats
 		// only for the first report and mark both threads as done.
 		private boolean gameResultRecorded = false;
+		private int lastEloChange = 0;
 
 		ClientThread(Socket s, int id) {
 			this.connection = s;
@@ -130,12 +131,12 @@ public class Server {
 			switch (msg.type) {
 
 				case REGISTER:
-					handleRegister(msg.data);
+					handleRegister(msg.data, msg.password);
 					break;
 
 				// LOGIN for existing (persisted) accounts.
 				case LOGIN:
-					handleLogin(msg.data);
+					handleLogin(msg.data, msg.password);
 					break;
 
 				case MOVE:
@@ -184,9 +185,14 @@ public class Server {
 
 		// ── Registration ──────────────────────────────────────────────────────
 
-		private void handleRegister(String uname) {
+		private void handleRegister(String uname, String password) {
 			if (uname == null || uname.trim().isEmpty()) {
 				send(new Message(Message.Type.REGISTER_FAIL, "Username cannot be empty."));
+				return;
+			}
+			// ADDED: require a non-empty password on register
+			if (password == null || password.isEmpty()) {
+				send(new Message(Message.Type.REGISTER_FAIL, "Password cannot be empty."));
 				return;
 			}
 			uname = uname.trim();
@@ -207,8 +213,8 @@ public class Server {
 							"\"" + uname + "\" is currently in use."));
 					return;
 				}
-				// ADDED: create the persistent record, then bind this session.
-				userStore.register(uname);
+				// create the persistent record, then bind this session.
+				userStore.register(uname, password);
 				username = uname;
 				activeSessions.put(uname, this);
 				userStore.setOnline(uname, true);
@@ -225,9 +231,13 @@ public class Server {
 		}
 
 		// ADDED: LOGIN handler — sign-in flow for existing persisted accounts.
-		private void handleLogin(String uname) {
+		private void handleLogin(String uname, String password) {
 			if (uname == null || uname.trim().isEmpty()) {
 				send(new Message(Message.Type.LOGIN_FAIL, "Username cannot be empty."));
+				return;
+			}
+			if (password == null || password.isEmpty()) {
+				send(new Message(Message.Type.REGISTER_FAIL, "Password cannot be empty."));
 				return;
 			}
 			uname = uname.trim();
@@ -238,11 +248,19 @@ public class Server {
 							"No account named \"" + uname + "\". Register first."));
 					return;
 				}
+				// Added: credentials check
+				if (!userStore.checkPassword(uname, password)) {
+					send(new Message(Message.Type.LOGIN_FAIL,
+							"Incorrect password for \"" + uname + "\"."));
+					log("Login rejected (bad password): " + uname);
+					return;
+				}
 				if (activeSessions.containsKey(uname)) {
 					send(new Message(Message.Type.LOGIN_FAIL,
 							"\"" + uname + "\" is already logged in elsewhere."));
 					return;
 				}
+
 				username = uname;
 				activeSessions.put(uname, this);
 				userStore.setOnline(uname, true);
@@ -268,29 +286,42 @@ public class Server {
 		}
 
 		private void tryMatch() {
-			// Called while holding Server.this monitor
 			if (waitingQueue.size() < 2) return;
 
-			ClientThread p1 = waitingQueue.remove(0);
-			ClientThread p2 = waitingQueue.remove(0);
+			// ADDED: find the two queued players with the smallest Elo gap.
+			int bestI = 0, bestJ = 1, bestGap = Integer.MAX_VALUE;
+			for (int i = 0; i < waitingQueue.size(); i++) {
+				for (int j = i + 1; j < waitingQueue.size(); j++) {
+					int ei = eloOf(waitingQueue.get(i).username);
+					int ej = eloOf(waitingQueue.get(j).username);
+					int gap = Math.abs(ei - ej);
+					if (gap < bestGap) { bestGap = gap; bestI = i; bestJ = j; }
+				}
+			}
+			ClientThread p1 = waitingQueue.remove(bestJ);  // remove higher index first
+			ClientThread p2 = waitingQueue.remove(bestI);
 
 			p1.partner = p2;
 			p2.partner = p1;
-			// ADDED: reset per-game state so the win/loss recorder fires exactly
-			//        once per game, even across rematches between the same pair.
 			p1.gameResultRecorded = false;
 			p2.gameResultRecorded = false;
 
 			Message startP1 = new Message(Message.Type.GAME_START, p2.username);
-			startP1.playerNum = 1;   // RED, moves second (bottom of board)
+			startP1.playerNum = 1;
 
 			Message startP2 = new Message(Message.Type.GAME_START, p1.username);
-			startP2.playerNum = 2;   // BLACK, moves first (top of board)
+			startP2.playerNum = 2;
 
 			p1.send(startP1);
 			p2.send(startP2);
 
-			log("Game started: " + p1.username + " (RED) vs " + p2.username + " (BLACK)");
+			log("Game started: " + p1.username + " (RED, " + eloOf(p1.username) + ") vs "
+					+ p2.username + " (BLACK, " + eloOf(p2.username) + ")");
+		}
+
+		private int eloOf(String username) {
+			User u = userStore.get(username);
+			return u == null ? 1000 : u.getElo();
 		}
 
 		// ADDED: Game-over reporting.
@@ -307,15 +338,28 @@ public class Server {
 				String a = this.username;
 				String b = partner.username;
 				if ("DRAW".equalsIgnoreCase(winnerOrDraw)) {
+					// ADDED: Elo update for draw
+					int[] d = userStore.applyEloUpdate(a, b, true);
+					this.lastEloChange    = d[0];
+					partner.lastEloChange = d[1];
 					log("Game ended in a draw: " + a + " vs " + b);
 				} else if (a.equals(winnerOrDraw)) {
 					userStore.recordWin(a);
 					userStore.recordLoss(b);
-					log("Result recorded: " + a + " defeated " + b);
+					// ADDED: Elo update
+					int[] d = userStore.applyEloUpdate(a, b, false);
+					this.lastEloChange    = d[0];
+					partner.lastEloChange = d[1];
+					log("Result recorded: " + a + " defeated " + b
+							+ "  (" + signed(d[0]) + " / " + signed(d[1]) + ")");
 				} else if (b.equals(winnerOrDraw)) {
 					userStore.recordWin(b);
 					userStore.recordLoss(a);
-					log("Result recorded: " + b + " defeated " + a);
+					// ADDED: Elo update
+					int[] d = userStore.applyEloUpdate(b, a, false);
+					partner.lastEloChange = d[0];
+					this.lastEloChange    = d[1];
+					log("Result recorded: " + b + " defeated " + a + "  (" + signed(d[0]) + " / " + signed(d[1]) + ")");
 				} else {
 					log("GAME_OVER received with unexpected winner: " + winnerOrDraw);
 				}
@@ -366,13 +410,20 @@ public class Server {
 				userStore.recordWin(partner.username);
 				userStore.recordLoss(this.username);
 
+				// ADDED: Elo update for forfeit (forfeiter treated as full loser)
+				int[] d = userStore.applyEloUpdate(partner.username, this.username, false);
+				partner.lastEloChange = d[0];
+				this.lastEloChange    = d[1];
+
 				// Tell the opponent they win by forfeit, using GAME_OVER with their name.
 				Message notice = new Message(Message.Type.GAME_OVER, partner.username);
 				partner.send(notice);
+				notice.eloChange = partner.lastEloChange;
 
 				// Also echo to the forfeiter so their UI knows the game ended.
 				Message selfNotice = new Message(Message.Type.GAME_OVER, partner.username);
 				send(selfNotice);
+				notice.eloChange = partner.lastEloChange;
 
 				pushSelfUserInfo(this);
 				pushSelfUserInfo(partner);
@@ -397,8 +448,11 @@ public class Server {
 						partner.gameResultRecorded = true;
 						userStore.recordWin(partner.username);
 						userStore.recordLoss(username);
+						int[] d = userStore.applyEloUpdate(partner.username, username, false);
+						partner.lastEloChange = d[0];
 						Message notice = new Message(Message.Type.GAME_OVER, partner.username);
 						partner.send(notice);
+						notice.eloChange = partner.lastEloChange;
 						log("Disconnect counted as forfeit: " + partner.username + " wins");
 						pushSelfUserInfo(partner);
 					}
@@ -442,6 +496,7 @@ public class Server {
 			info.data   = u.getUsername();
 			info.wins   = u.getWins();
 			info.losses = u.getLosses();
+			info.elo = u.getElo();
 			info.online = activeSessions.containsKey(u.getUsername());
 			info.friends = new ArrayList<>(u.getFriends());
 			send(info);
@@ -456,6 +511,7 @@ public class Server {
 			info.data   = u.getUsername();
 			info.wins   = u.getWins();
 			info.losses = u.getLosses();
+			info.elo = u.getElo();
 			info.online = true;
 			info.friends = new ArrayList<>(u.getFriends());
 			target.send(info);
@@ -536,7 +592,8 @@ public class Server {
 			sb.append(f).append("|")
 					.append(online ? "1" : "0").append("|")
 					.append(fu.getWins()).append("|")
-					.append(fu.getLosses());
+					.append(fu.getLosses())
+					.append(fu.getElo());
 			first = false;
 		}
 		return sb.toString();
@@ -575,4 +632,5 @@ public class Server {
 	private void log(String msg) {
 		callback.accept("[Server] " + msg);
 	}
+	private static String signed(int n) { return (n >= 0 ? "+" : "") + n; }
 }

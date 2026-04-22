@@ -9,7 +9,7 @@ import java.util.List;
  */
 public class Message implements Serializable {
     // CHANGED: bumped serialVersionUID from 42L -> 43L because new fields were added
-    static final long serialVersionUID = 43L;
+    static final long serialVersionUID = 45L;
 
     public enum Type {
         // Account flow
@@ -48,7 +48,7 @@ public class Message implements Serializable {
         FRIEND_LIST,    // server→client : data = semicolon-separated "name|online|wins|losses"
         FRIEND_ACTION_RESULT  // server→client : data = status message (e.g. "Added X", "User not found")
     }
-
+    public String password;
     public Type   type;
     public String data;
     public int    fromRow = -1, fromCol = -1, toRow = -1, toCol = -1;
@@ -57,6 +57,8 @@ public class Message implements Serializable {
     // ADDED: payload fields used by USER_INFO responses
     public int     wins;
     public int     losses;
+    public int elo;
+    public int eloChange;
     public boolean online;
     public List<String> friends = new ArrayList<>();
 
@@ -69,6 +71,12 @@ public class Message implements Serializable {
     public Message(Type type, String data) {
         this.type = type;
         this.data = data;
+    }
+
+    public Message(Type type, String data, String password) {
+        this.type     = type;
+        this.data     = data;
+        this.password = password;
     }
 
     @Override

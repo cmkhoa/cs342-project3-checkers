@@ -54,14 +54,14 @@ public class FriendsScene {
         } else {
             for (String e : friendEntries) {
                 String[] parts = e.split("\\|");
-                if (parts.length < 4) continue;
+                if (parts.length < 5) continue;
                 String name   = parts[0];
                 boolean on    = "1".equals(parts[1]);
                 String wins   = parts[2];
                 String losses = parts[3];
                 listView.getItems().add(String.format(
-                        "%s %s    W%s  L%s",
-                        on ? "●" : "○", name, wins, losses));
+                        "%s %s    W%s  L%s  (%s)",
+                        on ? "●" : "○", name, wins, losses, parts[4]));  // parts[4] = elo
             }
         }
 

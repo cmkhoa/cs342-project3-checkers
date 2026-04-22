@@ -1,4 +1,3 @@
-// ADDED: imports for the friends Set
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -10,30 +9,40 @@ import java.util.Set;
 //       UserStore and the server's GAME_OVER / FORFEIT handlers.
 public class User {
     private final String  username;
+    private       String  password;
     private       boolean online;
     private       int     wins;
     private       int     losses;
+    private       int     elo = 1000;  // ADDED: Elo rating, defaults to 1000
     // ADDED: friends set (preserves insertion order so the UI list is stable)
     private final Set<String> friends = new LinkedHashSet<>();
 
     public User(String username) {
         this.username = username;
-        //  default online was true; now we default to false and flip it
-        //  to true only when the user actually connects. This matches the
-        //  real lifecycle now that users persist across server restarts.
+        this.password = "";
+        this.online   = false;
+    }
+
+    public User(String username, String password) {
+        this.username = username;
+        this.password = password == null ? "" : password;
         this.online   = false;
     }
 
     // constructor used by UserStore when loading users from users.json
-    public User(String username, int wins, int losses, Set<String> friends) {
+    // added elo parameter
+    public User(String username, String password, int wins, int losses, int elo, Set<String> friends) {
         this.username = username;
+        this.password = password == null ? "" : password;
         this.wins     = wins;
         this.losses   = losses;
+        this.elo      = elo;
         this.online   = false;
         if (friends != null) this.friends.addAll(friends);
     }
 
     public String  getUsername(){ return username; }
+    public String  getPassword(){ return password; }
     public boolean isOnline()   { return online;   }
     public int     getWins()    { return wins;   }
     public int     getLosses()  { return losses; }
@@ -41,8 +50,14 @@ public class User {
     public Set<String> getFriends() { return friends; }
 
     public void setOnline(boolean online) { this.online = online; }
+    public void setPassword(String password) {
+        this.password = password == null ? "" : password;
+    }
     public void addWin()    { wins++;   }
     public void addLoss()   { losses++; }
+
+    public int  getElo()         { return elo; }
+    public void setElo(int elo)  { this.elo = elo; }
 
     // friend-management methods
     public boolean addFriend(String name) {
