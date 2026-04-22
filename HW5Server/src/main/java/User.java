@@ -13,6 +13,7 @@ public class User {
     private       boolean online;
     private       int     wins;
     private       int     losses;
+    private       int     elo = 1000;  // ADDED: Elo rating, defaults to 1000
     // ADDED: friends set (preserves insertion order so the UI list is stable)
     private final Set<String> friends = new LinkedHashSet<>();
 
@@ -29,11 +30,13 @@ public class User {
     }
 
     // constructor used by UserStore when loading users from users.json
-    public User(String username, String password, int wins, int losses, Set<String> friends) {
+    // added elo parameter
+    public User(String username, String password, int wins, int losses, int elo, Set<String> friends) {
         this.username = username;
         this.password = password == null ? "" : password;
         this.wins     = wins;
         this.losses   = losses;
+        this.elo      = elo;
         this.online   = false;
         if (friends != null) this.friends.addAll(friends);
     }
@@ -52,6 +55,9 @@ public class User {
     }
     public void addWin()    { wins++;   }
     public void addLoss()   { losses++; }
+
+    public int  getElo()         { return elo; }
+    public void setElo(int elo)  { this.elo = elo; }
 
     // friend-management methods
     public boolean addFriend(String name) {

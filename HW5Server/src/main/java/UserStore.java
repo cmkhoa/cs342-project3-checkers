@@ -93,6 +93,25 @@ public class UserStore {
         if (u != null) { u.addLoss(); save(); }
     }
 
+    // ADDED: atomically apply Elo change to both players using standard formula.
+    // K=32, draws split 0.5/0.5, result is stored in users.json immediately.
+    public synchronized int[] applyEloUpdate(String winner, String loser, boolean draw) {
+        User w = users.get(winner);
+        User l = users.get(loser);
+        if (w == null || l == null) return new int[]{0, 0};
+        int K = 32;
+        double ew = 1.0 / (1.0 + Math.pow(10, (l.getElo() - w.getElo()) / 400.0));
+        double el = 1.0 - ew;
+        double sw = draw ? 0.5 : 1.0;
+        double sl = draw ? 0.5 : 0.0;
+        int dw = (int) Math.round(K * (sw - ew));
+        int dl = (int) Math.round(K * (sl - el));
+        w.setElo(w.getElo() + dw);
+        l.setElo(l.getElo() + dl);
+        save();
+        return new int[]{dw, dl};   // [winner delta, loser delta]
+    }
+
     public synchronized boolean addFriend(String owner, String friend) {
         User u = users.get(owner);
         if (u == null)            return false;
@@ -136,9 +155,10 @@ public class UserStore {
                 String pass   = (String) entry.getOrDefault("password", "");
                 int    wins   = ((Number) entry.getOrDefault("wins",   0)).intValue();
                 int    losses = ((Number) entry.getOrDefault("losses", 0)).intValue();
+                int elo = ((Number) entry.getOrDefault("elo", 1000)).intValue();
                 @SuppressWarnings("unchecked")
                 List<String> friends = (List<String>) entry.getOrDefault("friends", new ArrayList<>());
-                users.put(name, new User(name, pass, wins, losses, new LinkedHashSet<>(friends)));
+                users.put(name, new User(name, pass, wins, losses, elo, new LinkedHashSet<>(friends)));
             }
             System.out.println("[UserStore] Loaded " + users.size() + " user(s) from " + file);
         } catch (Exception e) {
@@ -169,6 +189,7 @@ public class UserStore {
             sb.append("\"password\":").append(jsonString(u.getPassword() == null ? "" : u.getPassword())).append(",");
             sb.append("\"wins\":").append(u.getWins()).append(",");
             sb.append("\"losses\":").append(u.getLosses()).append(",");
+            sb.append("\"elo\":").append(u.getElo()).append(",");
             sb.append("\"friends\":[");
             boolean firstFriend = true;
             for (String f : u.getFriends()) {

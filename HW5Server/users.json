@@ -1,9 +1,7 @@
 {
   "users": [
-    {"username":"a","password":"","wins":0,"losses":1,"friends":[]},
-    {"username":"b","password":"","wins":1,"losses":0,"friends":[]},
-    {"username":"123","password":"","wins":1,"losses":1,"friends":[]},
-    {"username":"minh","password":"1234","wins":0,"losses":0,"friends":[]},
-    {"username":"ssiu","password":"","wins":1,"losses":1,"friends":[]}
+    {"username":"minh","password":"minh180106!","wins":1,"losses":1,"elo":1001,"friends":[]},
+    {"username":"asdfasdf","password":"1234567890","wins":0,"losses":1,"elo":983,"friends":[]},
+    {"username":"siu","password":"1234","wins":1,"losses":0,"elo":1016,"friends":[]}
   ]
 }

@@ -9,7 +9,7 @@ import java.util.List;
  */
 public class Message implements Serializable {
     // bumped serialVersionUID from 42L -> 43L because new fields were added
-    static final long serialVersionUID = 44L;
+    static final long serialVersionUID = 45L;
 
     public enum Type {
         // Account flow
@@ -57,6 +57,8 @@ public class Message implements Serializable {
     // payload fields used by USER_INFO responses
     public int     wins;
     public int     losses;
+    public int elo;
+    public int eloChange;
     public boolean online;
     public List<String> friends = new ArrayList<>();
     public String password;

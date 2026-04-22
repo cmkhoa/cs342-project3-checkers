@@ -28,6 +28,7 @@ public class GuiClient extends Application {
 	private boolean loggedIn     = false;
 	private int     myWins       = 0;
 	private int     myLosses     = 0;
+	private int myElo = 1000;
 	private final List<String> friendEntries = new ArrayList<>();
 
 	// ── Game state ────────────────────────────────────────────────────────
@@ -115,14 +116,14 @@ public class GuiClient extends Application {
 		if (clientConnection == null) {
 			if (target != null && target.equals(myUsername)) {
 				primaryStage.setScene(ProfileScene.build(
-						myUsername, myUsername, myWins, myLosses, false, false,
+						myUsername, myUsername, myWins, myLosses, myElo, false, false,
 						buildProfileActions()));
 			}
 			return;
 		}
 		awaitingProfileFor = target;
 		primaryStage.setScene(ProfileScene.build(
-				myUsername, target, -1, -1, false, isFriend(target),
+				myUsername, target, -1, -1, 0, false, isFriend(target),
 				buildProfileActions()));
 		clientConnection.send(new Message(Message.Type.GET_USER_INFO, target));
 	}
@@ -323,7 +324,7 @@ public class GuiClient extends Application {
 				break;
 
 			case GAME_OVER:
-				Platform.runLater(() -> handleServerGameOver(msg.data));
+				Platform.runLater(() -> handleServerGameOver(msg));
 				break;
 
 			case QUIT_GAME:
@@ -343,11 +344,12 @@ public class GuiClient extends Application {
 					if (who.equals(myUsername)) {
 						myWins   = msg.wins;
 						myLosses = msg.losses;
+						myElo = msg.elo;
 					}
 					if (who.equals(awaitingProfileFor)) {
 						awaitingProfileFor = null;
 						primaryStage.setScene(ProfileScene.build(
-								myUsername, who, msg.wins, msg.losses, msg.online,
+								myUsername, who, msg.wins, msg.losses, msg.elo, msg.online,
 								isFriend(who), buildProfileActions()));
 					}
 				});
@@ -375,20 +377,24 @@ public class GuiClient extends Application {
 		}
 	}
 
-	private void handleServerGameOver(String winnerUsername) {
+	private void handleServerGameOver(Message msg) {
+		String winnerUsername = msg.data;
 		if (gameOver) return;
 		gameOver       = true;
 		resultReported = true;
 		updateStatus();
 		drawBoard();
 
+		int delta = msg.eloChange;
+		String eloTag = delta != 0 ? "   (" + (delta >= 0 ? "+" : "") + delta + " Elo)" : "";
+
 		String resultText;
 		if ("DRAW".equalsIgnoreCase(winnerUsername)) {
-			resultText = "It's a draw!";
+			resultText = "It's a draw!" + eloTag;
 		} else if (winnerUsername != null && winnerUsername.equals(myUsername)) {
-			resultText = "You win! (Opponent left / forfeited)";
+			resultText = "You win! (Opponent left / forfeited)" + eloTag;
 		} else if (winnerUsername != null) {
-			resultText = "You lose.  (" + winnerUsername + " won)";
+			resultText = "You lose.  (" + winnerUsername + " won)" + eloTag;
 		} else {
 			resultText = "Game over.";
 		}
