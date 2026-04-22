@@ -1,6 +1,9 @@
 {
   "users": [
-    {"username":"a","wins":0,"losses":1,"friends":[]},
-    {"username":"b","wins":1,"losses":0,"friends":[]}
+    {"username":"a","password":"","wins":0,"losses":1,"friends":[]},
+    {"username":"b","password":"","wins":1,"losses":0,"friends":[]},
+    {"username":"123","password":"","wins":1,"losses":1,"friends":[]},
+    {"username":"minh","password":"1234","wins":0,"losses":0,"friends":[]},
+    {"username":"ssiu","password":"","wins":1,"losses":1,"friends":[]}
   ]
 }

@@ -51,16 +51,38 @@ public class UserStore {
         return users.get(username);
     }
 
-    /** Register a brand-new user. Returns null if the name is already taken. */
+    // CHANGED: old register(username) kept for backward compatibility; just
+    //          delegates to the new password-aware overload with empty password.
     public synchronized User register(String username) {
+        return register(username, "");
+    }
+
+    /**
+     * Register a brand-new user with a password.
+     * Returns null if the name is already taken.
+     */
+    // ADDED: password-aware register
+    public synchronized User register(String username, String password) {
         if (users.containsKey(username)) return null;
-        User u = new User(username);
+        User u = new User(username, password);
         users.put(username, u);
         save();
         return u;
     }
 
-    /** Record a completed game result for a user and persist. */
+    /**
+     * Check a username / password pair.
+     * Returns true only if the user exists AND the password matches exactly.
+     */
+    // ADDED: credential check used by the LOGIN flow
+    public synchronized boolean checkPassword(String username, String password) {
+        User u = users.get(username);
+        if (u == null) return false;
+        String stored = u.getPassword() == null ? "" : u.getPassword();
+        String given  = password == null ? "" : password;
+        return stored.equals(given);
+    }
+
     public synchronized void recordWin(String username) {
         User u = users.get(username);
         if (u != null) { u.addWin(); save(); }
@@ -74,7 +96,7 @@ public class UserStore {
     public synchronized boolean addFriend(String owner, String friend) {
         User u = users.get(owner);
         if (u == null)            return false;
-        if (!users.containsKey(friend)) return false;  // friend must be registered
+        if (!users.containsKey(friend)) return false;
         if (owner.equals(friend)) return false;
         boolean changed = u.addFriend(friend);
         if (changed) save();
@@ -92,7 +114,6 @@ public class UserStore {
     public synchronized void setOnline(String username, boolean online) {
         User u = users.get(username);
         if (u != null) u.setOnline(online);
-        // Online status is in-memory only — no need to persist.
     }
 
     public synchronized Collection<User> all() {
@@ -108,11 +129,16 @@ public class UserStore {
             List<Map<String, Object>> parsed = parseUsers(content);
             for (Map<String, Object> entry : parsed) {
                 String name   = (String) entry.get("username");
+                // ADDED: password is optional on load so pre-existing users.json
+                //        files (written before this feature existed) still load.
+                //        Missing password defaults to "" — those legacy users
+                //        can log in with an empty password.
+                String pass   = (String) entry.getOrDefault("password", "");
                 int    wins   = ((Number) entry.getOrDefault("wins",   0)).intValue();
                 int    losses = ((Number) entry.getOrDefault("losses", 0)).intValue();
                 @SuppressWarnings("unchecked")
                 List<String> friends = (List<String>) entry.getOrDefault("friends", new ArrayList<>());
-                users.put(name, new User(name, wins, losses, new LinkedHashSet<>(friends)));
+                users.put(name, new User(name, pass, wins, losses, new LinkedHashSet<>(friends)));
             }
             System.out.println("[UserStore] Loaded " + users.size() + " user(s) from " + file);
         } catch (Exception e) {
@@ -139,6 +165,8 @@ public class UserStore {
             if (!first) sb.append(",\n");
             sb.append("    {");
             sb.append("\"username\":").append(jsonString(u.getUsername())).append(",");
+            // ADDED: persist the password field
+            sb.append("\"password\":").append(jsonString(u.getPassword() == null ? "" : u.getPassword())).append(",");
             sb.append("\"wins\":").append(u.getWins()).append(",");
             sb.append("\"losses\":").append(u.getLosses()).append(",");
             sb.append("\"friends\":[");
@@ -176,8 +204,6 @@ public class UserStore {
 
     // ══════════════════════════════════════════════════════════════════════
     //  MINIMAL JSON PARSER
-    //  Handles the subset produced by serialise(): objects, arrays, strings,
-    //  integers, and the top-level { "users": [ ... ] } shape.
     // ══════════════════════════════════════════════════════════════════════
 
     private List<Map<String, Object>> parseUsers(String content) {
@@ -232,7 +258,6 @@ public class UserStore {
         }
 
         Map<String, Object> parseObject() {
-            // caller consumed '{'
             Map<String, Object> m = new LinkedHashMap<>();
             skipWs();
             if (i < s.length() && s.charAt(i) == '}') { i++; return m; }
@@ -251,7 +276,6 @@ public class UserStore {
         }
 
         List<Object> parseArray() {
-            // caller consumed '['
             List<Object> list = new ArrayList<>();
             skipWs();
             if (i < s.length() && s.charAt(i) == ']') { i++; return list; }

@@ -11,12 +11,6 @@ import java.util.List;
 
 /**
  * Main JavaFX client application for Checkers.
- *
- * Scenes are now built by dedicated scene-builder classes:
- *   MainScene, AuthScene, MatchingScene, GameScene,
- *   ProfileScene, FriendsScene
- *
- * This class owns all application state and wires scenes together.
  */
 public class GuiClient extends Application {
 
@@ -48,7 +42,6 @@ public class GuiClient extends Application {
 	private GameScene activeGameScene;
 	private String    awaitingProfileFor = null;
 
-	// ─────────────────────────────────────────────────────────────────────
 	public static void main(String[] args) { launch(args); }
 
 	@Override
@@ -84,11 +77,14 @@ public class GuiClient extends Application {
 
 	private void showAuth(boolean registerMode) {
 		primaryStage.setScene(AuthScene.build(registerMode,
-			new AuthScene.Actions() {
-				@Override public void onSubmit(String username) { attemptConnect(username, registerMode); }
-				@Override public void onToggle()                { showAuth(!registerMode); }
-				@Override public void onBack()                  { showMain(); }
-			}));
+				new AuthScene.Actions() {
+					// CHANGED: onSubmit now receives username AND password
+					@Override public void onSubmit(String username, String password) {
+						attemptConnect(username, password, registerMode);
+					}
+					@Override public void onToggle()                { showAuth(!registerMode); }
+					@Override public void onBack()                  { showMain(); }
+				}));
 	}
 
 	private void showMatching() {
@@ -125,7 +121,6 @@ public class GuiClient extends Application {
 			return;
 		}
 		awaitingProfileFor = target;
-		// Show placeholder immediately; USER_INFO fills it in
 		primaryStage.setScene(ProfileScene.build(
 				myUsername, target, -1, -1, false, isFriend(target),
 				buildProfileActions()));
@@ -195,9 +190,15 @@ public class GuiClient extends Application {
 		showMatching();
 	}
 
-	private void attemptConnect(String username, boolean isRegister) {
+	// CHANGED: now also takes a password, which is sent along with the
+	//          REGISTER or LOGIN message in the Message.password field.
+	private void attemptConnect(String username, String password, boolean isRegister) {
 		if (username.isEmpty()) {
 			showAlert("Please enter a username.");
+			return;
+		}
+		if (password == null || password.isEmpty()) {
+			showAlert("Please enter a password.");
 			return;
 		}
 		myUsername = username;
@@ -210,9 +211,14 @@ public class GuiClient extends Application {
 		}
 
 		final boolean reg = isRegister;
+		final String  pw  = password;
 		new Thread(() -> {
 			try { Thread.sleep(400); } catch (InterruptedException ignored) {}
-			Message msg = new Message(reg ? Message.Type.REGISTER : Message.Type.LOGIN, username);
+			// CHANGED: use the new (type, data, password) constructor
+			Message msg = new Message(
+					reg ? Message.Type.REGISTER : Message.Type.LOGIN,
+					username,
+					pw);
 			clientConnection.send(msg);
 		}).start();
 	}
@@ -263,7 +269,6 @@ public class GuiClient extends Application {
 			case LOGIN_OK:
 				loggedIn   = true;
 				myUsername = msg.data != null ? msg.data : myUsername;
-				// Navigate to main screen (logged-in state) after successful auth
 				Platform.runLater(() -> showMain());
 				break;
 
@@ -478,30 +483,26 @@ public class GuiClient extends Application {
 				double x = c * UI.CELL, y = r * UI.CELL;
 				boolean dark = (r + c) % 2 == 1;
 
-				// Cell background
 				if (r == selectedRow && c == selectedCol) {
-					gc.setFill(Color.web("#D4EAC8"));  // selected — soft green
+					gc.setFill(Color.web("#D4EAC8"));
 				} else if (isLegalDest(r, c)) {
 					gc.setFill(dark ? Color.web("#9ECBA0") : Color.web("#C8E8CB"));
 				} else if (dark) {
-					gc.setFill(Color.web("#C8C3BB"));  // dark square
+					gc.setFill(Color.web("#C8C3BB"));
 				} else {
-					gc.setFill(Color.web("#F5F0E8"));  // light square
+					gc.setFill(Color.web("#F5F0E8"));
 				}
 				gc.fillRect(x, y, UI.CELL, UI.CELL);
 
-				// Mandatory capture border
 				if (showCaptures && isCaptureRequired(capturePieces, r, c)) {
 					gc.setStroke(Color.web("#2D6A4F"));
 					gc.setLineWidth(2.5);
 					gc.strokeRect(x + 1.5, y + 1.5, UI.CELL - 3, UI.CELL - 3);
 				}
 
-				// Piece
 				int piece = board[r][c];
 				if (piece != CheckersLogic.EMPTY) drawPiece(gc, piece, x, y);
 
-				// Move dot
 				if (isLegalDest(r, c) && piece == CheckersLogic.EMPTY) {
 					gc.setFill(Color.web("#2D6A4F", 0.55));
 					double ds = UI.CELL * 0.28;
@@ -510,7 +511,6 @@ public class GuiClient extends Application {
 			}
 		}
 
-		// Grid lines
 		gc.setStroke(Color.web("#B0ABA3", 0.4));
 		gc.setLineWidth(0.5);
 		for (int i = 0; i <= 8; i++) {
@@ -524,22 +524,18 @@ public class GuiClient extends Application {
 		double sz  = UI.CELL - 2 * pad;
 		double px  = cx + pad, py = cy + pad;
 
-		// Shadow
 		gc.setFill(Color.color(0, 0, 0, 0.15));
 		gc.fillOval(px + 2, py + 3, sz, sz);
 
-		// Body
 		boolean isRed = (piece == CheckersLogic.RED || piece == CheckersLogic.RED_KING);
 		gc.setFill(isRed ? Color.web("#B83030") : Color.web("#1A1A1A"));
 		gc.fillOval(px, py, sz, sz);
 
-		// Inner ring
 		gc.setStroke(isRed ? Color.web("#D96060") : Color.web("#444444"));
 		gc.setLineWidth(1.5);
 		double inset = sz * 0.13;
 		gc.strokeOval(px + inset, py + inset, sz - 2 * inset, sz - 2 * inset);
 
-		// King crown
 		if (piece == CheckersLogic.RED_KING || piece == CheckersLogic.BLACK_KING) {
 			double ks = sz * 0.36;
 			gc.setFill(Color.web("#52B788"));

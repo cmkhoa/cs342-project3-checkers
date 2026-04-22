@@ -10,8 +10,8 @@ GuiClient$5.class
 MainScene$Actions.class
 FriendsScene.class
 MainScene.class
-GameScene$Actions.class
 Client.class
+GameScene$Actions.class
 MatchingScene.class
 Message$Type.class
 ProfileScene$Actions.class
@@ -21,5 +21,5 @@ GuiClient$3.class
 GuiClient$4.class
 MainScene$1.class
 CheckersLogic.class
-GuiClient$6.class
 GuiClient$1.class
+GuiClient$6.class

@@ -130,12 +130,12 @@ public class Server {
 			switch (msg.type) {
 
 				case REGISTER:
-					handleRegister(msg.data);
+					handleRegister(msg.data, msg.password);
 					break;
 
 				// LOGIN for existing (persisted) accounts.
 				case LOGIN:
-					handleLogin(msg.data);
+					handleLogin(msg.data, msg.password);
 					break;
 
 				case MOVE:
@@ -184,9 +184,14 @@ public class Server {
 
 		// ── Registration ──────────────────────────────────────────────────────
 
-		private void handleRegister(String uname) {
+		private void handleRegister(String uname, String password) {
 			if (uname == null || uname.trim().isEmpty()) {
 				send(new Message(Message.Type.REGISTER_FAIL, "Username cannot be empty."));
+				return;
+			}
+			// ADDED: require a non-empty password on register
+			if (password == null || password.isEmpty()) {
+				send(new Message(Message.Type.REGISTER_FAIL, "Password cannot be empty."));
 				return;
 			}
 			uname = uname.trim();
@@ -207,8 +212,8 @@ public class Server {
 							"\"" + uname + "\" is currently in use."));
 					return;
 				}
-				// ADDED: create the persistent record, then bind this session.
-				userStore.register(uname);
+				// create the persistent record, then bind this session.
+				userStore.register(uname, password);
 				username = uname;
 				activeSessions.put(uname, this);
 				userStore.setOnline(uname, true);
@@ -225,9 +230,13 @@ public class Server {
 		}
 
 		// ADDED: LOGIN handler — sign-in flow for existing persisted accounts.
-		private void handleLogin(String uname) {
+		private void handleLogin(String uname, String password) {
 			if (uname == null || uname.trim().isEmpty()) {
 				send(new Message(Message.Type.LOGIN_FAIL, "Username cannot be empty."));
+				return;
+			}
+			if (password == null || password.isEmpty()) {
+				send(new Message(Message.Type.REGISTER_FAIL, "Password cannot be empty."));
 				return;
 			}
 			uname = uname.trim();
@@ -238,11 +247,19 @@ public class Server {
 							"No account named \"" + uname + "\". Register first."));
 					return;
 				}
+				// Added: credentials check
+				if (!userStore.checkPassword(uname, password)) {
+					send(new Message(Message.Type.LOGIN_FAIL,
+							"Incorrect password for \"" + uname + "\"."));
+					log("Login rejected (bad password): " + uname);
+					return;
+				}
 				if (activeSessions.containsKey(uname)) {
 					send(new Message(Message.Type.LOGIN_FAIL,
 							"\"" + uname + "\" is already logged in elsewhere."));
 					return;
 				}
+
 				username = uname;
 				activeSessions.put(uname, this);
 				userStore.setOnline(uname, true);
