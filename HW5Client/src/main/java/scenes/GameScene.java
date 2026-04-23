@@ -1,3 +1,5 @@
+package scenes;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -87,10 +89,18 @@ public class GameScene {
         boardRow.setPadding(new Insets(4, 0, 4, 0));
 
         // ── Root (board always present; chat only online) ──────────────────
-        root.getChildren().addAll(topBar, statusBar, boardRow);
+        root.getChildren().addAll(topBar, statusBar);
 
         if (isOnline) {
+            root.getChildren().add(boardRow);
             root.getChildren().add(buildChatSection(actions));
+        } else {
+            // Center the board vertically when there's no chat
+            Region topSpacer = new Region();
+            Region bottomSpacer = new Region();
+            VBox.setVgrow(topSpacer, Priority.ALWAYS);
+            VBox.setVgrow(bottomSpacer, Priority.ALWAYS);
+            root.getChildren().addAll(topSpacer, boardRow, bottomSpacer);
         }
 
         Scene scene = new Scene(root, UI.W, UI.H);

@@ -1,3 +1,4 @@
+package models;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +35,17 @@ public class CheckersLogic {
     // ── Construction ──────────────────────────────────────────────────────────
     public CheckersLogic() {
         initBoard();
+    }
+
+    /** Copy constructor — deep-clones the entire game state. */
+    public CheckersLogic(CheckersLogic other) {
+        for (int r = 0; r < SIZE; r++)
+            System.arraycopy(other.board[r], 0, this.board[r], 0, SIZE);
+        this.redTurn    = other.redTurn;
+        this.gameOver   = other.gameOver;
+        this.winner     = other.winner;
+        this.jumpingRow = other.jumpingRow;
+        this.jumpingCol = other.jumpingCol;
     }
 
     private void initBoard() {

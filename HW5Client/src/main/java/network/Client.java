@@ -1,3 +1,6 @@
+package network;
+
+import models.Message;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -18,7 +21,7 @@ public class Client extends Thread {
 
 	private volatile boolean running = true;
 
-	Client(Consumer<Message> callback) {
+	public Client(Consumer<Message> callback) {
 		this.callback = callback;
 		setDaemon(true);   // don't prevent JVM shutdown
 	}
