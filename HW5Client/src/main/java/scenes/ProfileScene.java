@@ -171,6 +171,7 @@ public class ProfileScene {
                                       Set<String> friendNames, String myUsername,
                                       Actions actions) {
         // Result indicator
+        String resultDisplay;
         String resultClass;
         switch (result) {
             case "W": resultDisplay = "WIN";  resultClass = "profile-result-w"; break;
