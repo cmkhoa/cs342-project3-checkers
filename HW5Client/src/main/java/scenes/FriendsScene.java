@@ -23,6 +23,7 @@ public class FriendsScene {
         void onViewProfile(String name);
         void onAcceptRequest(String name);
         void onDeclineRequest(String name);
+        void onChallengeFriend(String name);
     }
 
     public static Scene build(List<String> friendEntries, List<String> pendingRequests, Actions actions) {
@@ -65,13 +66,16 @@ public class FriendsScene {
             body.getChildren().addAll(heading, sub);
         }
 
-        // ── Friends list ────────────────────────────────────────────────────
-        ListView<String> listView = new ListView<>();
-        listView.getStyleClass().add("list-view-styled");
-        VBox.setVgrow(listView, Priority.ALWAYS);
+        ScrollPane scroll = new ScrollPane();
+        scroll.setFitToWidth(true);
+        scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0; -fx-border-width: 0;");
+        VBox.setVgrow(scroll, Priority.ALWAYS);
+
+        VBox listContainer = new VBox(4);
+        scroll.setContent(listContainer);
 
         if (friendEntries.isEmpty()) {
-            listView.getItems().add("  No friends yet — add one below");
+            listContainer.getChildren().add(UI.infoLabel("No friends yet — add one below"));
         } else {
             for (String e : friendEntries) {
                 String[] parts = e.split("\\|");
@@ -80,21 +84,51 @@ public class FriendsScene {
                 boolean on    = "1".equals(parts[1]);
                 String wins   = parts[2];
                 String losses = parts[3];
-                listView.getItems().add(String.format(
-                        "%s %s    W%s  L%s  (%s)",
-                        on ? "●" : "○", name, wins, losses, parts[4]));  // parts[4] = elo
+                String elo    = parts[4];
+
+                HBox row = new HBox(8);
+                row.setAlignment(Pos.CENTER_LEFT);
+                row.setPadding(new Insets(10, 12, 10, 12));
+                row.getStyleClass().add("friend-row");
+
+                Label statusDot = new Label(on ? "●" : "○");
+                statusDot.setStyle(on ? "-fx-text-fill: #52B788;" : "-fx-text-fill: #7A9A8A;");
+
+                Label nameLbl = new Label(name);
+                nameLbl.getStyleClass().add("friend-name-label");
+
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, Priority.ALWAYS);
+
+                Label statsLbl = new Label(String.format("W%s L%s (%s)", wins, losses, elo));
+                statsLbl.setStyle("-fx-font-size: 11px; -fx-text-fill: #7A7570;");
+
+                row.getChildren().addAll(statusDot, nameLbl, spacer, statsLbl);
+
+                if (on) {
+                    Button playBtn = new Button("Play");
+                    playBtn.getStyleClass().add("btn-green");
+                    playBtn.setStyle("-fx-padding: 4 8; -fx-font-size: 11px;");
+                    playBtn.setOnAction(evt -> actions.onChallengeFriend(name));
+                    row.getChildren().add(playBtn);
+                }
+
+                Button removeBtn = new Button("✕");
+                removeBtn.getStyleClass().add("btn-danger");
+                removeBtn.setStyle("-fx-padding: 2 6; -fx-font-size: 9px;");
+                removeBtn.setOnAction(evt -> actions.onRemoveFriend(name));
+                row.getChildren().add(removeBtn);
+
+                // Double-click to view profile
+                row.setOnMouseClicked(evt -> {
+                    if (evt.getClickCount() == 2) {
+                        actions.onViewProfile(name);
+                    }
+                });
+
+                listContainer.getChildren().add(row);
             }
         }
-
-        // Double-click → profile
-        listView.setOnMouseClicked(e -> {
-            if (e.getClickCount() == 2) {
-                String sel = listView.getSelectionModel().getSelectedItem();
-                if (sel == null || sel.startsWith("  No friends")) return;
-                String name = extractName(sel);
-                if (name != null) actions.onViewProfile(name);
-            }
-        });
 
         // ── Send friend request ─────────────────────────────────────────────
         Label addLabel = UI.sectionLabel("SEND REQUEST");
@@ -121,25 +155,12 @@ public class FriendsScene {
         addRow.setAlignment(Pos.CENTER);
         HBox.setHgrow(addField, Priority.ALWAYS);
 
-        // ── Remove button ───────────────────────────────────────────────────
-        Button removeBtn = UI.dangerButton("REMOVE SELECTED");
-        removeBtn.setMaxWidth(Double.MAX_VALUE);
-        removeBtn.setPadding(new Insets(10, 0, 10, 0));
-        removeBtn.setOnAction(e -> {
-            String sel = listView.getSelectionModel().getSelectedItem();
-            if (sel == null || sel.startsWith("  No friends")) return;
-            String name = extractName(sel);
-            if (name != null) actions.onRemoveFriend(name);
-        });
-
         Label hint = UI.infoLabel("Double-tap a friend to view their profile.");
 
         body.getChildren().addAll(
-                listView,
+                scroll,
                 addLabel, addRow,
                 vspacer(10),
-                removeBtn,
-                vspacer(8),
                 hint
         );
 
@@ -172,14 +193,6 @@ public class FriendsScene {
         row.getStyleClass().add("friend-row");
         VBox.setMargin(row, new Insets(0, 0, 4, 0));
         return row;
-    }
-
-    private static String extractName(String listEntry) {
-        if (listEntry == null) return null;
-        // Format: "● name    W3  L1" or "○ name    W0  L0"
-        String s = listEntry.replaceAll("^[●○]\\s*", "").trim();
-        int space = s.indexOf(' ');
-        return space > 0 ? s.substring(0, space).trim() : s.trim();
     }
 
     private static Region vspacer(double h) {

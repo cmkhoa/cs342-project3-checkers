@@ -152,6 +152,7 @@ public class MainScene {
         logout.setMaxWidth(Double.MAX_VALUE);
         logout.setPadding(new Insets(11, 0, 11, 0));
         logout.setPadding(new Insets(11, 20, 11, 20));
+        logout.setOnAction(e -> actions.onLogout());
 
 
         VBox logoutBox = new VBox(logout);

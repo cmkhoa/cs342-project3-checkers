@@ -32,6 +32,7 @@ public class GameController {
         boolean hasConnection();
         String getMyUsername();
         String getOpponentName();
+        void closePendingAlert();
     }
 
     // ── State ──────────────────────────────────────────────────────────────
@@ -49,6 +50,7 @@ public class GameController {
     private int          selectedRow = -1;
     private int          selectedCol = -1;
     private List<int[]>  legalMovesForSelected = new ArrayList<>();
+    public  Alert        gameOverAlert;
 
     public GameController(Host host) {
         this.host = host;
@@ -62,6 +64,7 @@ public class GameController {
         resultReported = false;
         selectedRow = selectedCol = -1;
         legalMovesForSelected = new ArrayList<>();
+        closeGameOverDialog();
     }
 
     public void configureLocal() {
@@ -369,17 +372,39 @@ public class GameController {
     }
 
     public void showGameOverDialog(String message) {
-        Alert alert = new Alert(Alert.AlertType.NONE);
-        alert.setTitle("Game Over");
-        alert.setHeaderText(message);
-        alert.setContentText("What would you like to do?");
+        closeGameOverDialog();
+        gameOverAlert = new Alert(Alert.AlertType.NONE);
+        gameOverAlert.setTitle("Game Over");
+        gameOverAlert.setHeaderText(message);
+        gameOverAlert.setContentText("What would you like to do?");
 
-        ButtonType playAgain = new ButtonType("Play Again");
-        ButtonType mainMenu  = new ButtonType("Main Menu", ButtonBar.ButtonData.CANCEL_CLOSE);
-        alert.getButtonTypes().setAll(playAgain, mainMenu);
+        ButtonType rematch = null;
+        ButtonType playAgain;
+        
+        if (isOnline) {
+            rematch = new ButtonType("Rematch");
+            playAgain = new ButtonType("Find New Match");
+        } else {
+            playAgain = new ButtonType("Play Again");
+        }
+        
+        ButtonType mainMenu = new ButtonType("Main Menu", ButtonBar.ButtonData.CANCEL_CLOSE);
+        
+        if (isOnline) {
+            gameOverAlert.getButtonTypes().setAll(rematch, playAgain, mainMenu);
+        } else {
+            gameOverAlert.getButtonTypes().setAll(playAgain, mainMenu);
+        }
 
-        alert.showAndWait().ifPresent(btn -> {
-            if (btn == playAgain) {
+        final ButtonType finalRematch = rematch;
+
+        gameOverAlert.showAndWait().ifPresent(btn -> {
+            if (btn == finalRematch) {
+                if (isOnline && host.isLoggedIn() && host.hasConnection()) {
+                    host.sendMessage(new Message(Message.Type.CHALLENGE, host.getOpponentName()));
+                    host.showAlert("Rematch request sent! Waiting for opponent to accept within 15 seconds...");
+                }
+            } else if (btn == playAgain) {
                 if (isAI) {
                     configureAI();
                     initGame();
@@ -393,13 +418,22 @@ public class GameController {
                     initGame();
                     host.showGame();
                 }
-            } else {
+            } else if (btn == mainMenu) {
                 isOnline = false;
                 if (host.isLoggedIn() && host.hasConnection())
                     host.sendMessage(new Message(Message.Type.QUIT_GAME));
                 host.showMain();
             }
+            gameOverAlert = null;
         });
+    }
+
+    public void closeGameOverDialog() {
+        if (gameOverAlert != null && gameOverAlert.isShowing()) {
+            gameOverAlert.setResult(ButtonType.CLOSE);
+            gameOverAlert.close();
+            gameOverAlert = null;
+        }
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────

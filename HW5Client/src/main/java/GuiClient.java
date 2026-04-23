@@ -46,6 +46,7 @@ public class GuiClient extends Application implements GameController.Host {
 	// ── Profile navigation ────────────────────────────────────────────────
 	private String  awaitingProfileFor  = null;
 	private boolean profileReturnToGame = false;
+	private Alert pendingAlert = null;
 
 	public static void main(String[] args) { launch(args); }
 
@@ -69,6 +70,15 @@ public class GuiClient extends Application implements GameController.Host {
 	@Override public void showMain()    { navigateToMain(); }
 	@Override public void showMatching(){ navigateToMatching(); }
 	@Override public void showAlert(String text) { alertInfo(text); }
+	@Override public void closePendingAlert() {
+		Platform.runLater(() -> {
+			if (pendingAlert != null && pendingAlert.isShowing()) {
+				pendingAlert.setResult(ButtonType.OK);
+				pendingAlert.close();
+				pendingAlert = null;
+			}
+		});
+	}
 	@Override public boolean isLoggedIn()   { return loggedIn; }
 	@Override public boolean hasConnection(){ return clientConnection != null; }
 	@Override public String getMyUsername()  { return myUsername; }
@@ -210,6 +220,12 @@ public class GuiClient extends Application implements GameController.Host {
 				if (clientConnection != null)
 					clientConnection.send(new Message(Message.Type.DECLINE_FRIEND_REQUEST, name));
 			}
+			@Override public void onChallengeFriend(String name) {
+				if (clientConnection != null) {
+					clientConnection.send(new Message(Message.Type.CHALLENGE, name));
+					navigateToMatching();
+				}
+			}
 		}));
 		if (clientConnection != null)
 			clientConnection.send(new Message(Message.Type.GET_USER_INFO, myUsername));
@@ -243,6 +259,7 @@ public class GuiClient extends Application implements GameController.Host {
 	}
 
 	private void startOnlineGame(String opponent, int playerNum) {
+		closePendingAlert();
 		opponentName = opponent;
 		gc.myPlayerNum = playerNum;
 		gc.configureOnline(playerNum);
@@ -332,7 +349,7 @@ public class GuiClient extends Application implements GameController.Host {
 				break;
 
 			case GAME_START:
-				startOnlineGame(msg.data, msg.playerNum);
+				Platform.runLater(() -> startOnlineGame(msg.data, msg.playerNum));
 				break;
 
 			case MOVE:
@@ -425,6 +442,56 @@ public class GuiClient extends Application implements GameController.Host {
 				});
 				break;
 
+			case CHALLENGE_INCOMING:
+				Platform.runLater(() -> {
+					if (msg.data != null) {
+						String challenger = msg.data;
+						Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+						alert.setTitle("Incoming Challenge");
+						alert.setHeaderText(challenger + " has challenged you to a game!");
+						alert.setContentText("Do you want to accept?");
+						
+						ButtonType btnAccept = new ButtonType("Accept", ButtonBar.ButtonData.OK_DONE);
+						ButtonType btnDecline = new ButtonType("Decline", ButtonBar.ButtonData.CANCEL_CLOSE);
+						alert.getButtonTypes().setAll(btnAccept, btnDecline);
+						
+						Thread timer = new Thread(() -> {
+							try {
+								Thread.sleep(15000); // 15 seconds
+								Platform.runLater(() -> {
+									if (alert.isShowing()) {
+										alert.setResult(btnDecline);
+										alert.close();
+									}
+								});
+							} catch (InterruptedException ignored) {}
+						});
+						timer.setDaemon(true);
+						timer.start();
+						
+						alert.showAndWait().ifPresent(result -> {
+							if (result == btnAccept) {
+								clientConnection.send(new Message(Message.Type.CHALLENGE_ACCEPT, challenger));
+								gc.closeGameOverDialog();
+								navigateToMatching(); // Show waiting scene while server starts game
+							} else {
+								clientConnection.send(new Message(Message.Type.CHALLENGE_DECLINE, challenger));
+							}
+						});
+					}
+				});
+				break;
+
+			case CHALLENGE_REJECTED:
+				Platform.runLater(() -> {
+					if (msg.data != null) alertInfo(msg.data);
+					// If we were waiting for a match that was rejected, return to where we were
+					if (primaryStage.getScene() != null && primaryStage.getScene().getRoot().toString().contains("MatchingScene")) {
+						navigateToMain(); // or stay? Usually back to main menu or friends
+					}
+				});
+				break;
+
 			default:
 				break;
 		}
@@ -472,10 +539,15 @@ public class GuiClient extends Application implements GameController.Host {
 	}
 
 	private void alertInfo(String msg) {
-		Alert a = new Alert(Alert.AlertType.INFORMATION, msg, ButtonType.OK);
-		a.setHeaderText(null);
-		a.setTitle("Checkers");
-		a.showAndWait();
+		Platform.runLater(() -> {
+			if (pendingAlert != null && pendingAlert.isShowing()) {
+				pendingAlert.close();
+			}
+			pendingAlert = new Alert(Alert.AlertType.INFORMATION, msg, ButtonType.OK);
+			pendingAlert.setHeaderText(null);
+			pendingAlert.setTitle("Checkers");
+			pendingAlert.show();
+		});
 	}
 
 	// ── Helpers ───────────────────────────────────────────────────────────
