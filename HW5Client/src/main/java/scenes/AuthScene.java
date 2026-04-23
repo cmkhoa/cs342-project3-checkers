@@ -69,7 +69,7 @@ public class AuthScene {
 
         Label errorLabel = new Label("");
         errorLabel.getStyleClass().add("info-text");
-        errorLabel.setStyle("-fx-text-fill: #A63228;");
+        errorLabel.getStyleClass().add("auth-error-label");
         errorLabel.setWrapText(true);
         errorLabel.setVisible(false);
         errorLabel.setPadding(new Insets(8, 0, 0, 0));
@@ -85,9 +85,7 @@ public class AuthScene {
                 ? "Already have an account?  LOG IN"
                 : "New here?  CREATE ACCOUNT";
         Button toggleBtn = new Button(toggleText);
-        toggleBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #2D6A4F; " +
-                "-fx-font-size: 12px; -fx-cursor: hand; -fx-border-color: transparent; " +
-                "-fx-underline: true;");
+        toggleBtn.getStyleClass().add("auth-toggle-btn");
         toggleBtn.setOnAction(e -> actions.onToggle());
 
         VBox toggleBox = new VBox(toggleBtn);

@@ -152,24 +152,24 @@ public class FriendsScene {
 
     private static HBox buildRequestRow(String requester, Actions actions) {
         Label nameLabel = new Label("⏳ " + requester);
-        nameLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #1A1A1A; -fx-font-weight: bold;");
+        nameLabel.getStyleClass().add("friend-name-label");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Button accept = new Button("✓");
         accept.getStyleClass().add("btn-green");
-        accept.setStyle("-fx-min-width: 36; -fx-max-width: 36; -fx-padding: 6 0;");
+        accept.getStyleClass().add("friend-action-btn");
         accept.setOnAction(e -> actions.onAcceptRequest(requester));
 
         Button decline = new Button("✕");
         decline.getStyleClass().add("btn-danger");
-        decline.setStyle("-fx-min-width: 36; -fx-max-width: 36; -fx-padding: 6 0;");
+        decline.getStyleClass().add("friend-action-btn");
         decline.setOnAction(e -> actions.onDeclineRequest(requester));
 
         HBox row = new HBox(8, nameLabel, spacer, accept, decline);
         row.setAlignment(Pos.CENTER_LEFT);
         row.setPadding(new Insets(6, 8, 6, 8));
-        row.setStyle("-fx-background-color: #EDE8DF; -fx-background-radius: 8;");
+        row.getStyleClass().add("friend-row");
         VBox.setMargin(row, new Insets(0, 0, 4, 0));
         return row;
     }

@@ -44,14 +44,11 @@ public class GameScene {
         HBox topBar = new HBox(8, back, barSpacer);
         topBar.setAlignment(Pos.CENTER_LEFT);
         topBar.setPadding(new Insets(10, 12, 10, 8));
-        topBar.setStyle("-fx-background-color: #F5F0E8; " +
-                "-fx-border-color: transparent transparent #D4CFC5 transparent; " +
-                "-fx-border-width: 0 0 1 0;");
+        topBar.getStyleClass().add("game-top-bar");
 
         if (isOnline) {
             opponentLabel = new Label(opponentName.isEmpty() ? "" : opponentName.toUpperCase());
-            opponentLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; " +
-                    "-fx-text-fill: #2D6A4F; -fx-cursor: hand; -fx-underline: true;");
+            opponentLabel.getStyleClass().add("game-opponent-label");
             if (!opponentName.isEmpty())
                 opponentLabel.setOnMouseClicked(e -> actions.onOpponentNameClick());
 
@@ -80,7 +77,7 @@ public class GameScene {
         boardCanvas.setOnMouseClicked(e -> actions.onBoardClick(e.getX(), e.getY()));
 
         StackPane boardWrapper = new StackPane(boardCanvas);
-        boardWrapper.setStyle("-fx-border-color: #1A1A1A; -fx-border-width: 2;");
+        boardWrapper.getStyleClass().add("game-board-wrapper");
         boardWrapper.setMaxSize(UI.BOARD_PX + 4, UI.BOARD_PX + 4);
         boardWrapper.setPrefSize(UI.BOARD_PX + 4, UI.BOARD_PX + 4);
 

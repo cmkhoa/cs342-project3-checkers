@@ -35,14 +35,14 @@ public class MatchingScene {
         ProgressIndicator spinner = new ProgressIndicator(-1);
         spinner.setPrefSize(52, 52);
         spinner.getStyleClass().add("progress-indicator");
-        spinner.setStyle("-fx-progress-color: #2D6A4F;");
+        spinner.getStyleClass().add("matching-spinner");
 
         Region gap1 = new Region();
         gap1.setPrefHeight(24);
 
         Label waiting = new Label("FINDING MATCH");
         waiting.getStyleClass().add("waiting-text");
-        waiting.setStyle("-fx-font-weight: bold; -fx-letter-spacing: 3px; -fx-font-size: 15px;");
+        waiting.getStyleClass().add("matching-waiting");
 
         Label sub = new Label("Waiting for another player to join…");
         sub.getStyleClass().add("waiting-sub");

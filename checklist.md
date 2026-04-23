@@ -2,15 +2,15 @@
 - [x] add multithreading to server
 - [x] add chat
 
-- [ ] persistent log in between games ( register button go away if logged in)
-- [ ] json user store
-- [ ] user info panel
-- [ ] add friends
+- [x] persistent log in between games ( register button go away if logged in)
+- [x] json user store
+- [x] user info panel
+- [x] add friends
 
-- [ ] add user options (play again, quit game, forfeit)
-- [ ] UI actual implementation
-- [ ] dynamic UI to reflect user side of the board
-- [ ] elo matchmaking (with normal matching fallback)
+- [x] add user options (play again, quit game, forfeit)
+- [x] UI actual implementation
+- [x] dynamic UI to reflect user side of the board
+- [x] elo matchmaking (with normal matching fallback)
 
 optional:
 - [ ] simple how to play panel

@@ -146,7 +146,7 @@ public class UI {
         Region r = new Region();
         r.setPrefHeight(1);
         r.setMaxWidth(Double.MAX_VALUE);
-        r.setStyle("-fx-background-color: #D4CFC5;");
+        r.getStyleClass().add("ui-divider");
         return r;
     }
 
