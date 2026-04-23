@@ -1,3 +1,5 @@
+package scenes;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -15,6 +17,7 @@ public class MainScene {
 
     public interface Actions {
         void onPlayLocal();
+        void onPlayAI();
         void onLogin();
         void onRegister();
         void onFindMatch();
@@ -75,6 +78,8 @@ public class MainScene {
         Label playSection = UI.sectionLabel("OFFLINE");
         Button playLocal = UI.primaryButton("Pass & Play");
         playLocal.setOnAction(e -> actions.onPlayLocal());
+        Button playAI = UI.primaryButton("PLAY AI");
+        playAI.setOnAction(e -> actions.onPlayAI());
 
         // Account section
         Label accountSection = UI.sectionLabel("ONLINE");
@@ -91,6 +96,8 @@ public class MainScene {
             playSection,
             vspacer(8),
             playLocal,
+            vspacer(8),
+            playAI,
             accountSection,
             vspacer(8),
             login,
@@ -125,8 +132,10 @@ public class MainScene {
         playSection.setPadding(new Insets(24, 0, 0, 0));
 
         Button playLocal  = UI.primaryButton("PLAY LOCAL");
+        Button playAI     = UI.primaryButton("PLAY AI");
         Button findMatch  = UI.primaryButton("FIND MATCH");
         playLocal.setOnAction(e -> actions.onPlayLocal());
+        playAI.setOnAction(e -> actions.onPlayAI());
         findMatch.setOnAction(e -> actions.onFindMatch());
 
         Label accountSection = UI.sectionLabel("ACCOUNT");
@@ -153,7 +162,7 @@ public class MainScene {
         body.getChildren().addAll(
                 chip,
                 playSection, vspacer(8),
-                playLocal, vspacer(8), findMatch,
+                playLocal, vspacer(8), playAI, vspacer(8), findMatch,
                 accountSection, vspacer(8),
                 profile, vspacer(8), friends,
                 logoutBox

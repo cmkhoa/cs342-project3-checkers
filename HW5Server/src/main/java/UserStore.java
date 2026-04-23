@@ -130,9 +130,45 @@ public class UserStore {
         return changed;
     }
 
+    // ── Pending friend requests ───────────────────────────────────────────
+
+    public synchronized boolean addPendingRequest(String recipient, String requester) {
+        User u = users.get(recipient);
+        if (u == null) return false;
+        if (!users.containsKey(requester)) return false;
+        boolean changed = u.addPendingRequest(requester);
+        if (changed) save();
+        return changed;
+    }
+
+    public synchronized boolean removePendingRequest(String recipient, String requester) {
+        User u = users.get(recipient);
+        if (u == null) return false;
+        boolean changed = u.removePendingRequest(requester);
+        if (changed) save();
+        return changed;
+    }
+
+    /** Record a match result for both players. */
+    public synchronized void recordMatch(String player, String opponent,
+                                         String result, int eloChange) {
+        User u = users.get(player);
+        if (u != null) {
+            u.addMatchRecord(opponent, result, eloChange);
+            save();
+        }
+    }
+
     public synchronized void setOnline(String username, boolean online) {
         User u = users.get(username);
         if (u != null) u.setOnline(online);
+    }
+
+    /** Wipe all user data and persist an empty store. */
+    public synchronized void clearAll() {
+        users.clear();
+        save();
+        System.out.println("[UserStore] Cleared all users.");
     }
 
     public synchronized Collection<User> all() {
@@ -158,7 +194,12 @@ public class UserStore {
                 int elo = ((Number) entry.getOrDefault("elo", 1000)).intValue();
                 @SuppressWarnings("unchecked")
                 List<String> friends = (List<String>) entry.getOrDefault("friends", new ArrayList<>());
-                users.put(name, new User(name, pass, wins, losses, elo, new LinkedHashSet<>(friends)));
+                @SuppressWarnings("unchecked")
+                List<String> pending = (List<String>) entry.getOrDefault("pendingRequests", new ArrayList<>());
+                @SuppressWarnings("unchecked")
+                List<String> history = (List<String>) entry.getOrDefault("matchHistory", new ArrayList<>());
+                users.put(name, new User(name, pass, wins, losses, elo,
+                        new LinkedHashSet<>(friends), new LinkedHashSet<>(pending), history));
             }
             System.out.println("[UserStore] Loaded " + users.size() + " user(s) from " + file);
         } catch (Exception e) {
@@ -196,6 +237,24 @@ public class UserStore {
                 if (!firstFriend) sb.append(",");
                 sb.append(jsonString(f));
                 firstFriend = false;
+            }
+            sb.append("]");
+            // pendingRequests
+            sb.append(",\"pendingRequests\":[");
+            boolean firstPending = true;
+            for (String p : u.getPendingFriendRequests()) {
+                if (!firstPending) sb.append(",");
+                sb.append(jsonString(p));
+                firstPending = false;
+            }
+            sb.append("]");
+            // matchHistory
+            sb.append(",\"matchHistory\":[");
+            boolean firstMatch = true;
+            for (String m : u.getMatchHistory()) {
+                if (!firstMatch) sb.append(",");
+                sb.append(jsonString(m));
+                firstMatch = false;
             }
             sb.append("]}");
             first = false;

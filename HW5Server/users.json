@@ -1,7 +1,6 @@
 {
   "users": [
-    {"username":"minh","password":"minh180106!","wins":1,"losses":1,"elo":1001,"friends":[]},
-    {"username":"asdfasdf","password":"1234567890","wins":0,"losses":1,"elo":983,"friends":[]},
-    {"username":"siu","password":"1234","wins":1,"losses":0,"elo":1016,"friends":[]}
+    {"username":"world","password":"123","wins":2,"losses":0,"elo":1031,"friends":["hello"],"pendingRequests":[],"matchHistory":["hello|W|+15","hello|W|+16"]},
+    {"username":"hello","password":"123","wins":0,"losses":2,"elo":969,"friends":["world"],"pendingRequests":[],"matchHistory":["world|L|-15","world|L|-16"]}
   ]
 }

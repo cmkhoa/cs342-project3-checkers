@@ -1,3 +1,5 @@
+package scenes;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -9,8 +11,8 @@ import javafx.scene.shape.Rectangle;
 import java.util.List;
 
 /**
- * Friends list scene — view, add, remove friends.
- * Each entry in friendEntries has format: "name|online|wins|losses"
+ * Friends list scene — view, add, remove friends + pending request inbox.
+ * Each entry in friendEntries has format: "name|online|wins|losses|elo"
  */
 public class FriendsScene {
 
@@ -19,9 +21,11 @@ public class FriendsScene {
         void onAddFriend(String name);
         void onRemoveFriend(String name);
         void onViewProfile(String name);
+        void onAcceptRequest(String name);
+        void onDeclineRequest(String name);
     }
 
-    public static Scene build(List<String> friendEntries, Actions actions) {
+    public static Scene build(List<String> friendEntries, List<String> pendingRequests, Actions actions) {
         VBox root = UI.sceneRoot();
         root.setSpacing(0);
 
@@ -42,7 +46,24 @@ public class FriendsScene {
 
         Label heading = UI.titleLabel("FRIENDS");
         Label sub = UI.sectionLabel(friendEntries.size() + " FRIENDS");
-        sub.setPadding(new Insets(4, 0, 20, 0));
+        sub.setPadding(new Insets(4, 0, 12, 0));
+
+        // ── Pending requests ────────────────────────────────────────────────
+        if (pendingRequests != null && !pendingRequests.isEmpty()) {
+            Label pendingLabel = UI.sectionLabel("FRIEND REQUESTS (" + pendingRequests.size() + ")");
+            pendingLabel.setPadding(new Insets(0, 0, 8, 0));
+            body.getChildren().addAll(heading, pendingLabel);
+
+            for (String requester : pendingRequests) {
+                HBox row = buildRequestRow(requester, actions);
+                body.getChildren().add(row);
+            }
+
+            body.getChildren().add(vspacer(16));
+            body.getChildren().add(sub);
+        } else {
+            body.getChildren().addAll(heading, sub);
+        }
 
         // ── Friends list ────────────────────────────────────────────────────
         ListView<String> listView = new ListView<>();
@@ -75,14 +96,14 @@ public class FriendsScene {
             }
         });
 
-        // ── Add friend ──────────────────────────────────────────────────────
-        Label addLabel = UI.sectionLabel("ADD FRIEND");
+        // ── Send friend request ─────────────────────────────────────────────
+        Label addLabel = UI.sectionLabel("SEND REQUEST");
         addLabel.setPadding(new Insets(16, 0, 8, 0));
 
-        TextField addField = UI.styledField("Username to add…");
+        TextField addField = UI.styledField("Username…");
         addField.setMaxWidth(Double.MAX_VALUE);
 
-        Button addBtn = UI.greenButton("ADD");
+        Button addBtn = UI.greenButton("SEND");
         addBtn.setMaxWidth(120);
         addBtn.setPadding(new Insets(11, 0, 11, 0));
 
@@ -114,7 +135,6 @@ public class FriendsScene {
         Label hint = UI.infoLabel("Double-tap a friend to view their profile.");
 
         body.getChildren().addAll(
-                heading, sub,
                 listView,
                 addLabel, addRow,
                 vspacer(10),
@@ -128,6 +148,30 @@ public class FriendsScene {
         Scene scene = new Scene(root, UI.W, UI.H);
         scene.getStylesheets().add(FriendsScene.class.getResource("/styles.css").toExternalForm());
         return scene;
+    }
+
+    private static HBox buildRequestRow(String requester, Actions actions) {
+        Label nameLabel = new Label("⏳ " + requester);
+        nameLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #1A1A1A; -fx-font-weight: bold;");
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button accept = new Button("✓");
+        accept.getStyleClass().add("btn-green");
+        accept.setStyle("-fx-min-width: 36; -fx-max-width: 36; -fx-padding: 6 0;");
+        accept.setOnAction(e -> actions.onAcceptRequest(requester));
+
+        Button decline = new Button("✕");
+        decline.getStyleClass().add("btn-danger");
+        decline.setStyle("-fx-min-width: 36; -fx-max-width: 36; -fx-padding: 6 0;");
+        decline.setOnAction(e -> actions.onDeclineRequest(requester));
+
+        HBox row = new HBox(8, nameLabel, spacer, accept, decline);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setPadding(new Insets(6, 8, 6, 8));
+        row.setStyle("-fx-background-color: #EDE8DF; -fx-background-radius: 8;");
+        VBox.setMargin(row, new Insets(0, 0, 4, 0));
+        return row;
     }
 
     private static String extractName(String listEntry) {

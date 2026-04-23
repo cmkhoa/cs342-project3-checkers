@@ -1,5 +1,6 @@
+package models;
+
 import java.io.Serializable;
-// ADDED: imports needed for the new friends-list payload field
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,16 +9,13 @@ import java.util.List;
  * All fields are public for simplicity; unused fields default to null/0.
  */
 public class Message implements Serializable {
-    // CHANGED: bumped serialVersionUID from 42L -> 43L because new fields were added
-    static final long serialVersionUID = 45L;
+    static final long serialVersionUID = 47L;
 
     public enum Type {
         // Account flow
         REGISTER,       // client→server : data = desired username
         REGISTER_OK,    // server→client : data = username
         REGISTER_FAIL,  // server→client : data = error reason
-        // ADDED: separate LOGIN flow so the server can distinguish "sign in to existing account"
-        //        from REGISTER ("create a new account"). Needed for persistent JSON user store.
         LOGIN,          // client→server : data = existing username
         LOGIN_OK,       // server→client : data = username
         LOGIN_FAIL,     // server→client : data = error reason
@@ -29,38 +27,43 @@ public class Message implements Serializable {
         // Gameplay
         MOVE,           // client↔server : fromRow,fromCol,toRow,toCol
         CHAT,           // client↔server : data = "username: text"
-        // CHANGED: GAME_OVER is now client→server too (client reports the winning username),
-        //          and the semantics are winner USERNAME instead of winner COLOUR so the
-        //          server can record the result against the correct account.
         GAME_OVER,      // client→server or server→client : data = winning username or "DRAW"
         PLAY_AGAIN,     // client→server : wants rematch
         QUIT_GAME,      // client→server : disconnecting/returning to menu
-        // ADDED: FORFEIT — mid-game concede. Server records it as a loss for the forfeiter.
         FORFEIT,        // client→server : concede mid-game (counts as a loss)
 
-        // ADDED: user-info lookup (powers the profile panel)
+        // User-info lookup
         GET_USER_INFO,  // client→server : data = target username (self if null)
         USER_INFO,      // server→client : data = username, wins, losses, online, friendsList
 
-        // ADDED: friends feature
-        ADD_FRIEND,     // client→server : data = friend username
+        // Friends
+        ADD_FRIEND,     // (legacy, still handled) client→server : data = friend username
         REMOVE_FRIEND,  // client→server : data = friend username
-        FRIEND_LIST,    // server→client : data = semicolon-separated "name|online|wins|losses"
-        FRIEND_ACTION_RESULT  // server→client : data = status message (e.g. "Added X", "User not found")
+        FRIEND_LIST,    // server→client : data = semicolon-separated "name|online|wins|losses|elo"
+        FRIEND_ACTION_RESULT,  // server→client : data = status message
+
+        // Friend-request flow
+        SEND_FRIEND_REQUEST,     // client→server : data = target username
+        FRIEND_REQUEST_RECEIVED, // server→client : data = requester username
+        ACCEPT_FRIEND_REQUEST,   // client→server : data = requester username
+        DECLINE_FRIEND_REQUEST,  // client→server : data = requester username
+        PENDING_REQUESTS         // server→client : data = semicolon-separated requester usernames
     }
+
     public String password;
     public Type   type;
     public String data;
     public int    fromRow = -1, fromCol = -1, toRow = -1, toCol = -1;
     public int    playerNum; // 1 = RED (bottom), 2 = BLACK (top)
 
-    // ADDED: payload fields used by USER_INFO responses
     public int     wins;
     public int     losses;
     public int elo;
     public int eloChange;
     public boolean online;
     public List<String> friends = new ArrayList<>();
+    /** Each entry: "opponent|W or L or D|eloChange" — most recent first. */
+    public List<String> matchHistory = new ArrayList<>();
 
     public Message() {}
 

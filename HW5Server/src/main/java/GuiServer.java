@@ -63,8 +63,20 @@ public class GuiServer extends Application {
 				"-fx-border-width: 1.5; -fx-cursor: hand; -fx-padding: 5 16;");
 		clearBtn.setOnAction(e -> logView.getItems().clear());
 
-		HBox footer = new HBox(clearBtn);
-		footer.setAlignment(Pos.CENTER_RIGHT);
+		// Clear all users button
+		Button clearUsersBtn = new Button("Clear All Users");
+		clearUsersBtn.setFont(Font.font("Inter", 13));
+		clearUsersBtn.setStyle("-fx-background-color: #E85D5D; -fx-text-fill: white; " +
+				"-fx-border-color: #C04040; -fx-border-width: 1.5; -fx-cursor: hand; -fx-padding: 5 16;");
+		clearUsersBtn.setOnAction(e -> {
+			serverConnection.clearAllUsers();
+		});
+
+		Region spacer = new Region();
+		HBox.setHgrow(spacer, Priority.ALWAYS);
+
+		HBox footer = new HBox(10, clearBtn, spacer, clearUsersBtn);
+		footer.setAlignment(Pos.CENTER);
 		footer.setPadding(new Insets(10, 20, 12, 20));
 		footer.setStyle("-fx-border-color: #DDDDDD transparent transparent transparent; " +
 				"-fx-border-width: 1.5 0 0 0;");

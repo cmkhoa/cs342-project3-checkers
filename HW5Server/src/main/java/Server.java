@@ -1,3 +1,4 @@
+import models.Message;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
@@ -36,6 +37,14 @@ public class Server {
 		this.callback = callback;
 		serverThread  = new TheServer();
 		serverThread.start();
+	}
+
+	/** Wipe all persisted user data (for admin/testing). */
+	void clearAllUsers() {
+		synchronized (this) {
+			userStore.clearAll();
+			log("All user data cleared by server operator.");
+		}
 	}
 
 	// ══════════════════════════════════════════════════════════════════════════
@@ -178,6 +187,18 @@ public class Server {
 					handleRemoveFriend(msg.data);
 					break;
 
+				case SEND_FRIEND_REQUEST:
+					handleSendFriendRequest(msg.data);
+					break;
+
+				case ACCEPT_FRIEND_REQUEST:
+					handleAcceptFriendRequest(msg.data);
+					break;
+
+				case DECLINE_FRIEND_REQUEST:
+					handleDeclineFriendRequest(msg.data);
+					break;
+
 				default:
 					log("Unknown message type from " + displayName() + ": " + msg.type);
 			}
@@ -227,6 +248,7 @@ public class Server {
 			//        initial FRIEND_LIST so the friends panel renders correctly.
 			notifyFriendsOfStatusChange();
 			sendFriendListTo(this);
+			pushPendingRequests(this);
 			addToQueue();
 		}
 
@@ -270,6 +292,7 @@ public class Server {
 			send(new Message(Message.Type.LOGIN_OK, username));
 			notifyFriendsOfStatusChange();
 			sendFriendListTo(this);
+			pushPendingRequests(this);
 			addToQueue();
 		}
 
@@ -338,27 +361,30 @@ public class Server {
 				String a = this.username;
 				String b = partner.username;
 				if ("DRAW".equalsIgnoreCase(winnerOrDraw)) {
-					// ADDED: Elo update for draw
 					int[] d = userStore.applyEloUpdate(a, b, true);
 					this.lastEloChange    = d[0];
 					partner.lastEloChange = d[1];
+					userStore.recordMatch(a, b, "D", d[0]);
+					userStore.recordMatch(b, a, "D", d[1]);
 					log("Game ended in a draw: " + a + " vs " + b);
 				} else if (a.equals(winnerOrDraw)) {
 					userStore.recordWin(a);
 					userStore.recordLoss(b);
-					// ADDED: Elo update
 					int[] d = userStore.applyEloUpdate(a, b, false);
 					this.lastEloChange    = d[0];
 					partner.lastEloChange = d[1];
+					userStore.recordMatch(a, b, "W", d[0]);
+					userStore.recordMatch(b, a, "L", d[1]);
 					log("Result recorded: " + a + " defeated " + b
 							+ "  (" + signed(d[0]) + " / " + signed(d[1]) + ")");
 				} else if (b.equals(winnerOrDraw)) {
 					userStore.recordWin(b);
 					userStore.recordLoss(a);
-					// ADDED: Elo update
 					int[] d = userStore.applyEloUpdate(b, a, false);
 					partner.lastEloChange = d[0];
 					this.lastEloChange    = d[1];
+					userStore.recordMatch(b, a, "W", d[0]);
+					userStore.recordMatch(a, b, "L", d[1]);
 					log("Result recorded: " + b + " defeated " + a + "  (" + signed(d[0]) + " / " + signed(d[1]) + ")");
 				} else {
 					log("GAME_OVER received with unexpected winner: " + winnerOrDraw);
@@ -414,6 +440,8 @@ public class Server {
 				int[] d = userStore.applyEloUpdate(partner.username, this.username, false);
 				partner.lastEloChange = d[0];
 				this.lastEloChange    = d[1];
+				userStore.recordMatch(partner.username, this.username, "W", d[0]);
+				userStore.recordMatch(this.username, partner.username, "L", d[1]);
 
 				// Tell the opponent they win by forfeit, using GAME_OVER with their name.
 				Message notice = new Message(Message.Type.GAME_OVER, partner.username);
@@ -499,6 +527,7 @@ public class Server {
 			info.elo = u.getElo();
 			info.online = activeSessions.containsKey(u.getUsername());
 			info.friends = new ArrayList<>(u.getFriends());
+			info.matchHistory = new ArrayList<>(u.getMatchHistory());
 			send(info);
 		}
 
@@ -514,6 +543,7 @@ public class Server {
 			info.elo = u.getElo();
 			info.online = true;
 			info.friends = new ArrayList<>(u.getFriends());
+			info.matchHistory = new ArrayList<>(u.getMatchHistory());
 			target.send(info);
 		}
 
@@ -562,6 +592,97 @@ public class Server {
 			sendFriendListTo(this);
 		}
 
+		// ── Friend request flow ────────────────────────────────────────────────
+
+		private void handleSendFriendRequest(String targetName) {
+			if (username == null) return;
+			if (targetName == null || targetName.trim().isEmpty()) {
+				send(new Message(Message.Type.FRIEND_ACTION_RESULT, "Enter a username."));
+				return;
+			}
+			targetName = targetName.trim();
+			if (targetName.equals(username)) {
+				send(new Message(Message.Type.FRIEND_ACTION_RESULT, "You can't add yourself."));
+				return;
+			}
+			if (!userStore.exists(targetName)) {
+				send(new Message(Message.Type.FRIEND_ACTION_RESULT,
+						"No user named \"" + targetName + "\"."));
+				return;
+			}
+			// Already friends?
+			User self = userStore.get(username);
+			if (self != null && self.hasFriend(targetName)) {
+				send(new Message(Message.Type.FRIEND_ACTION_RESULT,
+						targetName + " is already your friend."));
+				return;
+			}
+			// Already has a pending request from us?
+			User target = userStore.get(targetName);
+			if (target != null && target.hasPendingRequest(username)) {
+				send(new Message(Message.Type.FRIEND_ACTION_RESULT,
+						"Request already sent to " + targetName + "."));
+				return;
+			}
+			// If the target already sent US a request, auto-accept
+			if (self != null && self.hasPendingRequest(targetName)) {
+				acceptRequest(targetName);
+				return;
+			}
+			// Store the pending request on the recipient
+			userStore.addPendingRequest(targetName, username);
+			log(username + " sent friend request to " + targetName);
+			send(new Message(Message.Type.FRIEND_ACTION_RESULT,
+					"Friend request sent to " + targetName + "."));
+			// If recipient is online, notify them
+			synchronized (Server.this) {
+				ClientThread recipientThread = activeSessions.get(targetName);
+				if (recipientThread != null) {
+					recipientThread.send(new Message(
+							Message.Type.FRIEND_REQUEST_RECEIVED, username));
+					pushPendingRequests(recipientThread);
+				}
+			}
+		}
+
+		private void handleAcceptFriendRequest(String requesterName) {
+			if (username == null || requesterName == null) return;
+			requesterName = requesterName.trim();
+			acceptRequest(requesterName);
+		}
+
+		private void acceptRequest(String requesterName) {
+			// Remove the pending request
+			userStore.removePendingRequest(username, requesterName);
+			// Mutually add as friends
+			userStore.addFriend(username, requesterName);
+			userStore.addFriend(requesterName, username);
+			log(username + " accepted friend request from " + requesterName);
+			send(new Message(Message.Type.FRIEND_ACTION_RESULT,
+					"You and " + requesterName + " are now friends!"));
+			sendFriendListTo(this);
+			pushPendingRequests(this);
+			// Notify requester if online
+			synchronized (Server.this) {
+				ClientThread requesterThread = activeSessions.get(requesterName);
+				if (requesterThread != null) {
+					requesterThread.send(new Message(Message.Type.FRIEND_ACTION_RESULT,
+							username + " accepted your friend request!"));
+					sendFriendListTo(requesterThread);
+				}
+			}
+		}
+
+		private void handleDeclineFriendRequest(String requesterName) {
+			if (username == null || requesterName == null) return;
+			requesterName = requesterName.trim();
+			userStore.removePendingRequest(username, requesterName);
+			log(username + " declined friend request from " + requesterName);
+			send(new Message(Message.Type.FRIEND_ACTION_RESULT,
+					"Declined request from " + requesterName + "."));
+			pushPendingRequests(this);
+		}
+
 		// ── Helpers ───────────────────────────────────────────────────────────
 
 		private String displayName() {
@@ -592,7 +713,7 @@ public class Server {
 			sb.append(f).append("|")
 					.append(online ? "1" : "0").append("|")
 					.append(fu.getWins()).append("|")
-					.append(fu.getLosses())
+					.append(fu.getLosses()).append("|")
 					.append(fu.getElo());
 			first = false;
 		}
@@ -606,6 +727,24 @@ public class Server {
 			payload = buildFriendListPayload(target.username);
 		}
 		Message msg = new Message(Message.Type.FRIEND_LIST, payload);
+		target.send(msg);
+	}
+
+	/**
+	 * Pushes the list of pending incoming friend requests to the given client.
+	 */
+	private void pushPendingRequests(Server.ClientThread target) {
+		if (target == null || target.username == null) return;
+		User u = userStore.get(target.username);
+		if (u == null) return;
+		StringBuilder sb = new StringBuilder();
+		boolean first = true;
+		for (String req : u.getPendingFriendRequests()) {
+			if (!first) sb.append(";");
+			sb.append(req);
+			first = false;
+		}
+		Message msg = new Message(Message.Type.PENDING_REQUESTS, sb.toString());
 		target.send(msg);
 	}
 

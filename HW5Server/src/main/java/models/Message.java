@@ -1,3 +1,4 @@
+package models;
 import java.io.Serializable;
 // ADDED: imports needed for the new friends-list payload field
 import java.util.ArrayList;
@@ -9,7 +10,7 @@ import java.util.List;
  */
 public class Message implements Serializable {
     // bumped serialVersionUID from 42L -> 43L because new fields were added
-    static final long serialVersionUID = 45L;
+    static final long serialVersionUID = 47L;
 
     public enum Type {
         // Account flow
@@ -43,10 +44,17 @@ public class Message implements Serializable {
         USER_INFO,      // server→client : data = username, wins, losses, online, friendsList
 
         // friends feature
-        ADD_FRIEND,     // client→server : data = friend username
+        ADD_FRIEND,     // (legacy, still handled) client→server : data = friend username
         REMOVE_FRIEND,  // client→server : data = friend username
-        FRIEND_LIST,    // server→client : data = semicolon-separated "name|online|wins|losses"
-        FRIEND_ACTION_RESULT  // server→client : data = status message (e.g. "Added X", "User not found")
+        FRIEND_LIST,    // server→client : data = semicolon-separated "name|online|wins|losses|elo"
+        FRIEND_ACTION_RESULT,  // server→client : data = status message
+
+        // friend-request flow
+        SEND_FRIEND_REQUEST,     // client→server : data = target username
+        FRIEND_REQUEST_RECEIVED, // server→client : data = requester username
+        ACCEPT_FRIEND_REQUEST,   // client→server : data = requester username
+        DECLINE_FRIEND_REQUEST,  // client→server : data = requester username
+        PENDING_REQUESTS         // server→client : data = semicolon-separated requester usernames
     }
 
     public Type   type;
@@ -61,6 +69,8 @@ public class Message implements Serializable {
     public int eloChange;
     public boolean online;
     public List<String> friends = new ArrayList<>();
+    /** Each entry: "opponent|W or L or D|eloChange" — most recent first. */
+    public List<String> matchHistory = new ArrayList<>();
     public String password;
     public Message() {}
 
