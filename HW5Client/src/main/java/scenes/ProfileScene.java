@@ -13,32 +13,30 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * User profile scene — shows wins, losses, Elo, online status,
- * recent match history (collapsible), and friend actions.
+ * User profile scene
  */
 public class ProfileScene {
 
     public interface Actions {
         void onBack();
+
         void onAddFriend(String name);
+
         void onRemoveFriend(String name);
     }
 
     /**
-     * @param matchHistory list of "opponent|W or L or D|eloChange" strings, most recent first
-     * @param friendNames  set of usernames that are friends (used to hide "add" button per history row)
+     * @param matchHistory list of "opponent|W or L or D|eloChange" strings, most
+     *                     recent first
+     * @param friendNames  set of usernames that are friends (used to hide "add"
+     *                     button per history row)
      */
-    public static Scene build(String myUsername,
-                              String targetUsername,
-                              int wins, int losses, int elo, boolean online,
-                              boolean isFriend,
-                              List<String> matchHistory,
-                              Set<String> friendNames,
-                              Actions actions) {
+    public static Scene build(String myUsername, String targetUsername, int wins, int losses, int elo, boolean online,
+            boolean isFriend, List<String> matchHistory, Set<String> friendNames, Actions actions) {
         VBox root = UI.sceneRoot();
         root.setSpacing(0);
 
-        // ── Top strip + back ────────────────────────────────────────────────
+        // Top bar
         Rectangle strip = UI.accentBar(UI.W, 4);
 
         Button back = UI.backButton();
@@ -47,7 +45,7 @@ public class ProfileScene {
         topBar.setPadding(new Insets(12, 8, 0, 8));
         topBar.setAlignment(Pos.CENTER_LEFT);
 
-        // ── Profile card ────────────────────────────────────────────────────
+        // Profile card
         VBox profileCard = new VBox(0);
         profileCard.getStyleClass().add("card-dark");
         profileCard.setAlignment(Pos.CENTER_LEFT);
@@ -62,21 +60,20 @@ public class ProfileScene {
 
         profileCard.getChildren().addAll(name, statusDot);
 
-        // ── Stats row ────────────────────────────────────────────────────────
+        // Stats row
         boolean hasData = wins >= 0 && losses >= 0;
 
         HBox statsRow = new HBox(0);
         statsRow.setAlignment(Pos.CENTER);
 
         statsRow.getChildren().addAll(
-                statCell("WINS",   hasData ? String.valueOf(wins)   : "—"),
+                statCell("WINS", hasData ? String.valueOf(wins) : "—"),
                 statDivider(),
                 statCell("LOSSES", hasData ? String.valueOf(losses) : "—"),
                 statDivider(),
-                statCell("ELO",    hasData ? String.valueOf(elo)    : "—")
-        );
+                statCell("ELO", hasData ? String.valueOf(elo) : "—"));
 
-        // ── Action buttons ───────────────────────────────────────────────────
+        // Action buttons
         VBox actionArea = new VBox(10);
         actionArea.setPadding(new Insets(20, 0, 0, 0));
 
@@ -97,10 +94,10 @@ public class ProfileScene {
             }
         }
 
-        // ── Match history (collapsible) ──────────────────────────────────────
+        // Match history (collapsible)
         VBox historySection = buildHistorySection(matchHistory, friendNames, myUsername, actions);
 
-        // ── Body layout ──────────────────────────────────────────────────────
+        // Body layout
         VBox body = new VBox(0);
         body.setPadding(new Insets(24, 24, 24, 24));
         VBox.setVgrow(body, Priority.ALWAYS);
@@ -118,12 +115,11 @@ public class ProfileScene {
         return scene;
     }
 
-    // ── Match history section ────────────────────────────────────────────────
-
+    // Match history section
     private static VBox buildHistorySection(List<String> matchHistory,
-                                            Set<String> friendNames,
-                                            String myUsername,
-                                            Actions actions) {
+            Set<String> friendNames,
+            String myUsername,
+            Actions actions) {
         VBox container = new VBox(0);
 
         if (matchHistory == null || matchHistory.isEmpty()) {
@@ -154,10 +150,11 @@ public class ProfileScene {
         // Build rows
         for (String entry : matchHistory) {
             String[] parts = entry.split("\\|");
-            if (parts.length < 3) continue;
-            String opponent  = parts[0];
-            String result    = parts[1]; // W, L, or D
-            String eloDelta  = parts[2]; // e.g. +15 or -12
+            if (parts.length < 3)
+                continue;
+            String opponent = parts[0];
+            String result = parts[1]; // W, L, or D
+            String eloDelta = parts[2]; // e.g. +15 or -12
 
             HBox row = buildMatchRow(opponent, result, eloDelta, friendNames, myUsername, actions);
             historyRows.getChildren().add(row);
@@ -168,15 +165,24 @@ public class ProfileScene {
     }
 
     private static HBox buildMatchRow(String opponent, String result, String eloDelta,
-                                      Set<String> friendNames, String myUsername,
-                                      Actions actions) {
+            Set<String> friendNames, String myUsername,
+            Actions actions) {
         // Result indicator
         String resultDisplay;
         String resultClass;
         switch (result) {
-            case "W": resultDisplay = "WIN";  resultClass = "profile-result-w"; break;
-            case "L": resultDisplay = "LOSS"; resultClass = "profile-result-l"; break;
-            default:  resultDisplay = "DRAW"; resultClass = "profile-result-d"; break;
+            case "W":
+                resultDisplay = "WIN";
+                resultClass = "profile-result-w";
+                break;
+            case "L":
+                resultDisplay = "LOSS";
+                resultClass = "profile-result-l";
+                break;
+            default:
+                resultDisplay = "DRAW";
+                resultClass = "profile-result-d";
+                break;
         }
 
         Label resultLabel = new Label(resultDisplay);
@@ -190,7 +196,8 @@ public class ProfileScene {
         // Elo change
         boolean positive = eloDelta.startsWith("+");
         Label eloLabel = new Label(eloDelta);
-        eloLabel.getStyleClass().addAll("profile-elo-change", positive ? "profile-elo-positive" : "profile-elo-negative");
+        eloLabel.getStyleClass().addAll("profile-elo-change",
+                positive ? "profile-elo-positive" : "profile-elo-negative");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -218,7 +225,7 @@ public class ProfileScene {
         return row;
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    // Helpers
 
     private static VBox statCell(String label, String value) {
         Label val = new Label(value);

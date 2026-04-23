@@ -1,60 +1,56 @@
 package models;
+
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Complete Checkers game logic (no JavaFX dependencies).
- *
- * Board orientation (row 0 = top):
- *   BLACK pieces start on rows 0-2  (move DOWN toward row 7; king at row 7)
- *   RED   pieces start on rows 5-7  (move UP  toward row 0; king at row 0)
- *   BLACK moves first.
- *
- * Pieces only occupy dark squares: (row + col) % 2 == 1
- */
+// Full Logic for Checkers game
 public class CheckersLogic {
 
-    // ── Constants ──────────────────────────────────────────────────────────────
-    public static final int SIZE       = 8;
-    public static final int EMPTY      = 0;
-    public static final int RED        = 1;  // regular red
-    public static final int RED_KING   = 2;  // king red
-    public static final int BLACK      = 3;  // regular black
-    public static final int BLACK_KING = 4;  // king black
+    // constants
+    public static final int SIZE = 8;
+    public static final int EMPTY = 0;
+    public static final int RED = 1;
+    public static final int RED_KING = 2;
+    public static final int BLACK = 3;
+    public static final int BLACK_KING = 4;
 
-    // ── State ──────────────────────────────────────────────────────────────────
+    // state variables
     private final int[][] board = new int[SIZE][SIZE];
-    private boolean redTurn = false;  // BLACK moves first
+    private boolean redTurn = false;
     private boolean gameOver = false;
-    private String  winner   = null;  // "RED", "BLACK", or "DRAW"
+    private String winner = null;
 
-    /** During a multi-jump sequence, identifies the piece that must continue. */
+    // For multi-jump sequence
     private int jumpingRow = -1;
     private int jumpingCol = -1;
 
-    // ── Construction ──────────────────────────────────────────────────────────
+    // Constructor
     public CheckersLogic() {
         initBoard();
     }
 
-    /** Copy constructor — deep-clones the entire game state. */
+    // copy constructor for the entire game state
     public CheckersLogic(CheckersLogic other) {
         for (int r = 0; r < SIZE; r++)
             System.arraycopy(other.board[r], 0, this.board[r], 0, SIZE);
-        this.redTurn    = other.redTurn;
-        this.gameOver   = other.gameOver;
-        this.winner     = other.winner;
+        this.redTurn = other.redTurn;
+        this.gameOver = other.gameOver;
+        this.winner = other.winner;
         this.jumpingRow = other.jumpingRow;
         this.jumpingCol = other.jumpingCol;
     }
 
+    // init board with black and red pieces
     private void initBoard() {
         for (int r = 0; r < SIZE; r++) {
             for (int c = 0; c < SIZE; c++) {
-                if ((r + c) % 2 == 1) {          // dark square
-                    if      (r < 3) board[r][c] = BLACK;
-                    else if (r > 4) board[r][c] = RED;
-                    else            board[r][c] = EMPTY;
+                if ((r + c) % 2 == 1) { // dark square
+                    if (r < 3)
+                        board[r][c] = BLACK;
+                    else if (r > 4)
+                        board[r][c] = RED;
+                    else
+                        board[r][c] = EMPTY;
                 } else {
                     board[r][c] = EMPTY;
                 }
@@ -62,7 +58,7 @@ public class CheckersLogic {
         }
     }
 
-    // ── Accessors ─────────────────────────────────────────────────────────────
+    // accessors
     public int[][] getBoard() {
         int[][] copy = new int[SIZE][SIZE];
         for (int r = 0; r < SIZE; r++)
@@ -70,62 +66,91 @@ public class CheckersLogic {
         return copy;
     }
 
-    public boolean isRedTurn()    { return redTurn; }
-    public boolean isGameOver()   { return gameOver; }
-    public String  getWinner()    { return winner; }
-    public boolean isMidJump()    { return jumpingRow >= 0; }
-    public int     getJumpingRow(){ return jumpingRow; }
-    public int     getJumpingCol(){ return jumpingCol; }
+    public boolean isRedTurn() {
+        return redTurn;
+    }
 
-    /** Count how many pieces each side still has. */
-    public int[] getPieceCounts() {   // [redCount, blackCount]
+    public boolean isGameOver() {
+        return gameOver;
+    }
+
+    public String getWinner() {
+        return winner;
+    }
+
+    public boolean isMidJump() {
+        return jumpingRow >= 0;
+    }
+
+    public int getJumpingRow() {
+        return jumpingRow;
+    }
+
+    public int getJumpingCol() {
+        return jumpingCol;
+    }
+
+    // count pieces red and black still has
+    public int[] getPieceCounts() {
         int red = 0, black = 0;
         for (int[] row : board)
             for (int cell : row) {
-                if (isRed(cell))   red++;
-                if (isBlack(cell)) black++;
+                if (isRed(cell))
+                    red++;
+                if (isBlack(cell))
+                    black++;
             }
-        return new int[]{red, black};
+        return new int[] { red, black };
     }
 
-    // ── Piece helpers ─────────────────────────────────────────────────────────
-    private static boolean isRed  (int p) { return p == RED   || p == RED_KING;   }
-    private static boolean isBlack(int p) { return p == BLACK || p == BLACK_KING; }
-    private static boolean isKing (int p) { return p == RED_KING || p == BLACK_KING; }
+    // piece helpers
+    private static boolean isRed(int p) {
+        return p == RED || p == RED_KING;
+    }
+
+    private static boolean isBlack(int p) {
+        return p == BLACK || p == BLACK_KING;
+    }
+
+    private static boolean isKing(int p) {
+        return p == RED_KING || p == BLACK_KING;
+    }
 
     private boolean isCurrentPlayer(int p) {
         return redTurn ? isRed(p) : isBlack(p);
     }
+
     private boolean isOpponent(int p) {
         return redTurn ? isBlack(p) : isRed(p);
     }
+
     private static boolean inBounds(int r, int c) {
         return r >= 0 && r < SIZE && c >= 0 && c < SIZE;
     }
 
-    // ── Move queries ──────────────────────────────────────────────────────────
-
     /**
      * Returns all squares [toRow, toCol] the piece at (row,col) may legally
-     * move to this turn, accounting for mandatory capture and multi-jump rules.
+     * move to this turn, accounting for must capture and multi-jump rules.
      * Returns an empty list if the piece cannot move.
      */
     public List<int[]> getLegalMoves(int row, int col) {
         List<int[]> result = new ArrayList<>();
-        if (!isCurrentPlayer(board[row][col])) return result;
+        if (!isCurrentPlayer(board[row][col]))
+            return result;
 
         // Mid-jump: only the jumping piece can continue, and only with captures
         if (jumpingRow >= 0) {
-            if (jumpingRow != row || jumpingCol != col) return result;
+            if (jumpingRow != row || jumpingCol != col)
+                return result;
             return capturesFrom(row, col);
         }
 
-        // Mandatory capture: if any piece can capture, return only captures for this piece
+        // must capture: if any piece can capture, return only captures for this piece
         if (anyCapture()) {
-            return capturesFrom(row, col);   // may be empty for this piece
+            return capturesFrom(row, col); // may be empty for this piece
         }
 
-        // No captures required — return simple diagonal moves
+        // return simple diagonal moves
         return simpleMoves(row, col);
     }
 
@@ -138,7 +163,7 @@ public class CheckersLogic {
         for (int r = 0; r < SIZE; r++)
             for (int c = 0; c < SIZE; c++)
                 if (isCurrentPlayer(board[r][c]) && !capturesFrom(r, c).isEmpty())
-                    result.add(new int[]{r, c});
+                    result.add(new int[] { r, c });
         return result;
     }
 
@@ -156,10 +181,10 @@ public class CheckersLogic {
         List<int[]> result = new ArrayList<>();
         int piece = board[row][col];
         for (int dr : directions(piece)) {
-            for (int dc : new int[]{-1, 1}) {
+            for (int dc : new int[] { -1, 1 }) {
                 int nr = row + dr, nc = col + dc;
                 if (inBounds(nr, nc) && board[nr][nc] == EMPTY)
-                    result.add(new int[]{nr, nc});
+                    result.add(new int[] { nr, nc });
             }
         }
         return result;
@@ -170,13 +195,11 @@ public class CheckersLogic {
         List<int[]> result = new ArrayList<>();
         int piece = board[row][col];
         for (int dr : directions(piece)) {
-            for (int dc : new int[]{-1, 1}) {
-                int mr = row + dr,   mc = col + dc;   // potential victim
-                int nr = row + 2*dr, nc = col + 2*dc; // landing square
-                if (inBounds(nr, nc)
-                        && isOpponent(board[mr][mc])
-                        && board[nr][nc] == EMPTY) {
-                    result.add(new int[]{nr, nc});
+            for (int dc : new int[] { -1, 1 }) {
+                int mr = row + dr, mc = col + dc; // potential victim
+                int nr = row + 2 * dr, nc = col + 2 * dc; // landing square
+                if (inBounds(nr, nc) && isOpponent(board[mr][mc]) && board[nr][nc] == EMPTY) {
+                    result.add(new int[] { nr, nc });
                 }
             }
         }
@@ -185,30 +208,34 @@ public class CheckersLogic {
 
     /** Forward row direction(s) for a piece. Kings return both. */
     private static int[] directions(int piece) {
-        if (piece == RED)   return new int[]{-1};
-        if (piece == BLACK) return new int[]{1};
-        return new int[]{-1, 1};   // king
+        if (piece == RED)
+            return new int[] { -1 };
+        if (piece == BLACK)
+            return new int[] { 1 };
+        return new int[] { -1, 1 }; // king
     }
 
     // ── Move execution ────────────────────────────────────────────────────────
 
     /**
      * Attempts to execute the move from (fromRow,fromCol) to (toRow,toCol).
+     * 
      * @return true if the move was legal and executed successfully.
      */
     public boolean makeMove(int fromRow, int fromCol, int toRow, int toCol) {
         // Validate
         boolean valid = getLegalMoves(fromRow, fromCol)
                 .stream().anyMatch(m -> m[0] == toRow && m[1] == toCol);
-        if (!valid) return false;
+        if (!valid)
+            return false;
 
         int piece = board[fromRow][fromCol];
         boolean wasKingBefore = isKing(piece);
-        boolean wasCapture    = (Math.abs(toRow - fromRow) == 2);
+        boolean wasCapture = (Math.abs(toRow - fromRow) == 2);
 
         // Move piece
         board[fromRow][fromCol] = EMPTY;
-        board[toRow][toCol]     = piece;
+        board[toRow][toCol] = piece;
 
         // Remove captured piece
         if (wasCapture) {
@@ -251,8 +278,16 @@ public class CheckersLogic {
     private void checkGameOver() {
         // Piece count wins
         int[] counts = getPieceCounts();
-        if (counts[0] == 0) { winner = "BLACK"; gameOver = true; return; }
-        if (counts[1] == 0) { winner = "RED";   gameOver = true; return; }
+        if (counts[0] == 0) {
+            winner = "BLACK";
+            gameOver = true;
+            return;
+        }
+        if (counts[1] == 0) {
+            winner = "RED";
+            gameOver = true;
+            return;
+        }
 
         // Can the current player move at all?
         if (!hasAnyMove(redTurn)) {

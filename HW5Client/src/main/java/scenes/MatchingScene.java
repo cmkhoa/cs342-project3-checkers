@@ -23,10 +23,10 @@ public class MatchingScene {
         root.setAlignment(Pos.CENTER);
         root.setSpacing(0);
 
-        // ── Top strip ──────────────────────────────────────────────────────
+        // Top bar
         Rectangle strip = UI.accentBar(UI.W, 4);
 
-        // ── Content ────────────────────────────────────────────────────────
+        // Main content
         VBox content = new VBox(0);
         content.setAlignment(Pos.CENTER);
         VBox.setVgrow(content, Priority.ALWAYS);

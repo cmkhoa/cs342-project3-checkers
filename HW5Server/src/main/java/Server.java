@@ -16,13 +16,13 @@ import java.util.function.Consumer;
  * Responsibilities:
  * - Accept TCP connections from clients
  * - Register unique usernames
- * - Match waiting players into games (first-in, first-out)
+ * - Match waiting players into games elo based with 100 points range
  * - Relay MOVE and CHAT messages between paired clients
  * - Handle disconnects and play-again requests
  */
 public class Server {
 
-	// ── Server-wide state (access via synchronized(this)) ────────────────────
+	// Server-wide state
 	final Map<String, ClientConnection> activeSessions = new HashMap<>();
 	final List<ClientConnection> waitingQueue = new ArrayList<>();
 	final UserStore userStore = new UserStore("users.json");
@@ -31,14 +31,12 @@ public class Server {
 	private final TheServer serverThread;
 	private final Consumer<Serializable> callback;
 
-	// ─────────────────────────────────────────────────────────────────────────
 	Server(Consumer<Serializable> callback) {
 		this.callback = callback;
 		serverThread = new TheServer();
 		serverThread.start();
 	}
 
-	/** Wipe all persisted user data (for admin/testing). */
 	void clearAllUsers() {
 		synchronized (this) {
 			userStore.clearAll();
@@ -46,10 +44,7 @@ public class Server {
 		}
 	}
 
-	// ══════════════════════════════════════════════════════════════════════════
 	// ACCEPTOR THREAD
-	// ══════════════════════════════════════════════════════════════════════════
-
 	private class TheServer extends Thread {
 		@Override
 		public void run() {
@@ -68,22 +63,13 @@ public class Server {
 		}
 	}
 
-
-
-	// ADDED: ══════════════════════════════════════════════════════════════════
-	// FRIEND NOTIFICATION HELPERS (server-level, not per-thread)
-	// Builds and dispatches FRIEND_LIST messages so that every
-	// interested client sees up-to-date wins/losses/online status.
-	// ══════════════════════════════════════════════════════════════════════════
-
-	/**
-	 * Builds the data payload for FRIEND_LIST as a list of
-	 * "name|online|wins|losses" strings separated by ';'.
-	 */
+	// FRIEND NOTIFICATION HELPERS
 	private String buildFriendListPayload(String owner) {
+		// get the user
 		User u = userStore.get(owner);
 		if (u == null)
 			return "";
+		// build the payload
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
 		for (String f : u.getFriends()) {
@@ -93,16 +79,14 @@ public class Server {
 			boolean online = activeSessions.containsKey(f);
 			if (!first)
 				sb.append(";");
-			sb.append(f).append("|")
-					.append(online ? "1" : "0").append("|")
-					.append(fu.getWins()).append("|")
-					.append(fu.getLosses()).append("|")
-					.append(fu.getElo());
+			sb.append(f).append("|").append(online ? "1" : "0").append("|").append(fu.getWins()).append("|")
+					.append(fu.getLosses()).append("|").append(fu.getElo());
 			first = false;
 		}
 		return sb.toString();
 	}
 
+	// builds and sends the friend list to the target client
 	void sendFriendListTo(ClientConnection target) {
 		if (target == null || target.username == null)
 			return;
@@ -114,9 +98,7 @@ public class Server {
 		target.send(msg);
 	}
 
-	/**
-	 * Pushes the list of pending incoming friend requests to the given client.
-	 */
+	// Pushes the list of pending incoming friend requests to the given client.
 	void pushPendingRequests(ClientConnection target) {
 		if (target == null || target.username == null)
 			return;
@@ -135,11 +117,9 @@ public class Server {
 		target.send(msg);
 	}
 
-	/**
-	 * Called when a user goes online or offline. Pushes a refreshed friend
-	 * list to every currently-connected user, so their panel shows the
-	 * updated status.
-	 */
+	// Called when a user goes online or offline.
+	// Pushes a refreshed friend list to every currently-connected user,
+	// so their panel shows the updated status.
 	void notifyFriendsOfStatusChange() {
 		List<ClientConnection> recipients = new ArrayList<>();
 		synchronized (this) {
@@ -152,10 +132,6 @@ public class Server {
 		for (ClientConnection r : recipients)
 			sendFriendListTo(r);
 	}
-
-	// ══════════════════════════════════════════════════════════════════════════
-	// LOGGING
-	// ══════════════════════════════════════════════════════════════════════════
 
 	void log(String msg) {
 		callback.accept("[Server] " + msg);

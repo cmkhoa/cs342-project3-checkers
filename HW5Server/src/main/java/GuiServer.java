@@ -15,59 +15,58 @@ import javafx.stage.WindowEvent;
 
 /**
  * Simple server GUI.
- * Shows a live log of all server activity (connections, registrations,
- * game starts, chat, disconnects).
- *
- * The clear-log button lets the operator flush the list.
  */
 public class GuiServer extends Application {
 
-	private Server           serverConnection;
+	private Server serverConnection;
 	private ListView<String> logView;
 
-	// ─────────────────────────────────────────────────────────────────────────
-	public static void main(String[] args) { launch(args); }
+	public static void main(String[] args) {
+		launch(args);
+	}
 
 	@Override
 	public void start(Stage stage) {
-		// ── Start server, wire log callback ──────────────────────────────────
+		// Start server, wire log callback
 		serverConnection = new Server(entry -> Platform.runLater(() -> {
 			logView.getItems().add(entry.toString());
 			logView.scrollTo(logView.getItems().size() - 1);
 		}));
 
-		// ── Build UI ─────────────────────────────────────────────────────────
+		// Build UI
 		Label title = new Label("CHECKERS  —  Server");
 		title.setFont(Font.font("Inter", FontWeight.NORMAL, 28));
 		title.setTextFill(Color.BLACK);
 
+		// listening on port 5555
 		Label subtitle = new Label("Listening on port 5555");
 		subtitle.setFont(Font.font("Inter", 14));
 		subtitle.setTextFill(Color.GRAY);
 
+		// title section
 		VBox header = new VBox(4, title, subtitle);
 		header.setAlignment(Pos.CENTER_LEFT);
 		header.setPadding(new Insets(20, 20, 12, 20));
-		header.setStyle("-fx-border-color: transparent transparent #DDDDDD transparent; " +
-				"-fx-border-width: 0 0 1.5 0;");
+		header.setStyle("-fx-border-color: transparent transparent #DDDDDD transparent; -fx-border-width: 0 0 1.5 0;");
 
+		// log section
 		logView = new ListView<>();
-		logView.setStyle("-fx-font-family: 'Monospaced'; -fx-font-size: 13; " +
-				"-fx-background-color: #FAFAFA; -fx-border-color: #CCCCCC;");
+		logView.setStyle(
+				"-fx-font-family: 'Monospaced'; -fx-font-size: 13; -fx-background-color: #FAFAFA; -fx-border-color: #CCCCCC;");
 		VBox.setVgrow(logView, Priority.ALWAYS);
 
 		// Clear-log button
 		Button clearBtn = new Button("Clear Log");
 		clearBtn.setFont(Font.font("Inter", 13));
-		clearBtn.setStyle("-fx-background-color: white; -fx-border-color: #222; " +
-				"-fx-border-width: 1.5; -fx-cursor: hand; -fx-padding: 5 16;");
+		clearBtn.setStyle(
+				"-fx-background-color: white; -fx-border-color: #222; -fx-border-width: 1.5; -fx-cursor: hand; -fx-padding: 5 16;");
 		clearBtn.setOnAction(e -> logView.getItems().clear());
 
 		// Clear all users button
 		Button clearUsersBtn = new Button("Clear All Users");
 		clearUsersBtn.setFont(Font.font("Inter", 13));
-		clearUsersBtn.setStyle("-fx-background-color: #E85D5D; -fx-text-fill: white; " +
-				"-fx-border-color: #C04040; -fx-border-width: 1.5; -fx-cursor: hand; -fx-padding: 5 16;");
+		clearUsersBtn.setStyle(
+				"-fx-background-color: #E85D5D; -fx-text-fill: white; -fx-border-color: #C04040; -fx-border-width: 1.5; -fx-cursor: hand; -fx-padding: 5 16;");
 		clearUsersBtn.setOnAction(e -> {
 			serverConnection.clearAllUsers();
 		});
@@ -75,11 +74,11 @@ public class GuiServer extends Application {
 		Region spacer = new Region();
 		HBox.setHgrow(spacer, Priority.ALWAYS);
 
+		// footer section
 		HBox footer = new HBox(10, clearBtn, spacer, clearUsersBtn);
 		footer.setAlignment(Pos.CENTER);
 		footer.setPadding(new Insets(10, 20, 12, 20));
-		footer.setStyle("-fx-border-color: #DDDDDD transparent transparent transparent; " +
-				"-fx-border-width: 1.5 0 0 0;");
+		footer.setStyle("-fx-border-color: #DDDDDD transparent transparent transparent; -fx-border-width: 1.5 0 0 0;");
 
 		VBox logSection = new VBox(logView);
 		logSection.setPadding(new Insets(0, 20, 0, 20));
@@ -89,7 +88,7 @@ public class GuiServer extends Application {
 		root.setStyle("-fx-background-color: white;");
 		VBox.setVgrow(logSection, Priority.ALWAYS);
 
-		// ── Stage ─────────────────────────────────────────────────────────────
+		// stage
 		stage.setTitle("Checkers Server");
 		stage.setScene(new Scene(root, 560, 520));
 		stage.setMinWidth(400);

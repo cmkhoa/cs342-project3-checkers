@@ -5,10 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-/**
- * Handles the network I/O for a connected client.
- * Extracted from Server.java to reduce file size.
- */
+// Handles the network I/O for a connected client.
 class ClientConnection extends Thread {
 
     private final Server server;

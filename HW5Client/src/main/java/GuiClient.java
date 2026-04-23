@@ -4,7 +4,6 @@ import javafx.scene.control.*;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
-import models.CheckersLogic;
 import models.Message;
 import network.Client;
 import scenes.*;
@@ -17,38 +16,39 @@ import java.util.Set;
 /**
  * Main JavaFX client application for Checkers.
  * Handles scene navigation, account management, and network message dispatch.
- * Game logic is delegated to {@link GameController}.
  */
 public class GuiClient extends Application implements GameController.Host {
 
-	// ── Window ────────────────────────────────────────────────────────────
+	// window
 	private Stage primaryStage;
 
-	// ── Network ───────────────────────────────────────────────────────────
-	private Client  clientConnection;
+	// network
+	private Client clientConnection;
 	private boolean isOnline;
 
-	// ── Player info ───────────────────────────────────────────────────────
-	private String  myUsername   = "";
-	private String  opponentName = "";
-	private boolean loggedIn     = false;
-	private int     myWins       = 0;
-	private int     myLosses     = 0;
-	private int     myElo        = 1000;
+	// player info
+	private String myUsername = "";
+	private String opponentName = "";
+	private boolean loggedIn = false;
+	private int myWins = 0;
+	private int myLosses = 0;
+	private int myElo = 1000;
 	private final List<String> friendEntries = new ArrayList<>();
 
-	// ── Friend requests ───────────────────────────────────────────────────
+	// Friend requests
 	private final List<String> pendingRequests = new ArrayList<>();
 
-	// ── Game controller ───────────────────────────────────────────────────
+	// Game controller
 	private final GameController gc = new GameController(this);
 
-	// ── Profile navigation ────────────────────────────────────────────────
-	private String  awaitingProfileFor  = null;
+	// Profile navigation
+	private String awaitingProfileFor = null;
 	private boolean profileReturnToGame = false;
 	private Alert pendingAlert = null;
 
-	public static void main(String[] args) { launch(args); }
+	public static void main(String[] args) {
+		launch(args);
+	}
 
 	@Override
 	public void start(Stage stage) {
@@ -56,21 +56,33 @@ public class GuiClient extends Application implements GameController.Host {
 		primaryStage.setTitle("Checkers");
 		primaryStage.setResizable(false);
 		primaryStage.setOnCloseRequest((WindowEvent e) -> {
-			if (clientConnection != null) clientConnection.disconnect();
+			if (clientConnection != null)
+				clientConnection.disconnect();
 			Platform.exit();
 			System.exit(0);
 		});
 		showMain();
 	}
 
-	// ══════════════════════════════════════════════════════════════════════
-	//  HOST INTERFACE (GameController callbacks)
-	// ══════════════════════════════════════════════════════════════════════
+	// host callbacks
 
-	@Override public void showMain()    { navigateToMain(); }
-	@Override public void showMatching(){ navigateToMatching(); }
-	@Override public void showAlert(String text) { alertInfo(text); }
-	@Override public void closePendingAlert() {
+	@Override
+	public void showMain() {
+		navigateToMain();
+	}
+
+	@Override
+	public void showMatching() {
+		navigateToMatching();
+	}
+
+	@Override
+	public void showAlert(String text) {
+		alertInfo(text);
+	}
+
+	@Override
+	public void closePendingAlert() {
 		Platform.runLater(() -> {
 			if (pendingAlert != null && pendingAlert.isShowing()) {
 				pendingAlert.setResult(ButtonType.OK);
@@ -79,14 +91,31 @@ public class GuiClient extends Application implements GameController.Host {
 			}
 		});
 	}
-	@Override public boolean isLoggedIn()   { return loggedIn; }
-	@Override public boolean hasConnection(){ return clientConnection != null; }
-	@Override public String getMyUsername()  { return myUsername; }
-	@Override public String getOpponentName(){ return opponentName; }
+
+	@Override
+	public boolean isLoggedIn() {
+		return loggedIn;
+	}
+
+	@Override
+	public boolean hasConnection() {
+		return clientConnection != null;
+	}
+
+	@Override
+	public String getMyUsername() {
+		return myUsername;
+	}
+
+	@Override
+	public String getOpponentName() {
+		return opponentName;
+	}
 
 	@Override
 	public void sendMessage(Message msg) {
-		if (clientConnection != null) clientConnection.send(msg);
+		if (clientConnection != null)
+			clientConnection.send(msg);
 	}
 
 	@Override
@@ -94,32 +123,80 @@ public class GuiClient extends Application implements GameController.Host {
 		gc.activeGameScene = new GameScene();
 		primaryStage.setScene(gc.activeGameScene.build(myUsername, opponentName, gc.isOnline,
 				new GameScene.Actions() {
-					@Override public void onBoardClick(double x, double y) { gc.handleBoardClick(x, y); }
-					@Override public void onBack()    { confirmBack(); }
-					@Override public void onForfeit() { confirmForfeit(); }
-					@Override public void onSendChat(String text) { gc.sendChat(text); }
-					@Override public void onOpponentNameClick() { openProfileScene(opponentName); }
+					@Override
+					public void onBoardClick(double x, double y) {
+						gc.handleBoardClick(x, y);
+					}
+
+					@Override
+					public void onBack() {
+						confirmBack();
+					}
+
+					@Override
+					public void onForfeit() {
+						confirmForfeit();
+					}
+
+					@Override
+					public void onSendChat(String text) {
+						gc.sendChat(text);
+					}
+
+					@Override
+					public void onOpponentNameClick() {
+						openProfileScene(opponentName);
+					}
 				}));
 		gc.drawBoard();
 		gc.updateStatus();
 		gc.updatePieceCountLabels();
 	}
 
-	// ══════════════════════════════════════════════════════════════════════
-	//  SCENE NAVIGATION
-	// ══════════════════════════════════════════════════════════════════════
+	// scene navigation
 
 	private void navigateToMain() {
 		awaitingProfileFor = null;
 		primaryStage.setScene(MainScene.build(loggedIn, myUsername, new MainScene.Actions() {
-			@Override public void onPlayLocal()  { startLocalGame(); }
-			@Override public void onPlayAI()     { startAIGame(); }
-			@Override public void onLogin()      { showAuth(false); }
-			@Override public void onRegister()   { showAuth(true); }
-			@Override public void onFindMatch()  { findMatchOnline(); }
-			@Override public void onProfile()    { openProfileScene(myUsername); }
-			@Override public void onFriends()    { openFriendsScene(); }
-			@Override public void onLogout()     { doLogout(); }
+			@Override
+			public void onPlayLocal() {
+				startLocalGame();
+			}
+
+			@Override
+			public void onPlayAI() {
+				startAIGame();
+			}
+
+			@Override
+			public void onLogin() {
+				showAuth(false);
+			}
+
+			@Override
+			public void onRegister() {
+				showAuth(true);
+			}
+
+			@Override
+			public void onFindMatch() {
+				findMatchOnline();
+			}
+
+			@Override
+			public void onProfile() {
+				openProfileScene(myUsername);
+			}
+
+			@Override
+			public void onFriends() {
+				openFriendsScene();
+			}
+
+			@Override
+			public void onLogout() {
+				doLogout();
+			}
 		}));
 		primaryStage.show();
 	}
@@ -127,11 +204,20 @@ public class GuiClient extends Application implements GameController.Host {
 	private void showAuth(boolean registerMode) {
 		primaryStage.setScene(AuthScene.build(registerMode,
 				new AuthScene.Actions() {
-					@Override public void onSubmit(String username, String password) {
+					@Override
+					public void onSubmit(String username, String password) {
 						attemptConnect(username, password, registerMode);
 					}
-					@Override public void onToggle()  { showAuth(!registerMode); }
-					@Override public void onBack()    { navigateToMain(); }
+
+					@Override
+					public void onToggle() {
+						showAuth(!registerMode);
+					}
+
+					@Override
+					public void onBack() {
+						navigateToMain();
+					}
 				}));
 	}
 
@@ -144,7 +230,7 @@ public class GuiClient extends Application implements GameController.Host {
 		}));
 	}
 
-	// ── Profile / Friends ─────────────────────────────────────────────────
+	// Profile / Friends
 
 	private void openProfileScene(String target) {
 		profileReturnToGame = (gc.activeGameScene != null && !gc.gameOver
@@ -167,7 +253,8 @@ public class GuiClient extends Application implements GameController.Host {
 
 	private ProfileScene.Actions buildProfileActions() {
 		return new ProfileScene.Actions() {
-			@Override public void onBack() {
+			@Override
+			public void onBack() {
 				if (profileReturnToGame && gc.activeGameScene != null) {
 					showGame();
 				} else {
@@ -175,12 +262,16 @@ public class GuiClient extends Application implements GameController.Host {
 				}
 				profileReturnToGame = false;
 			}
-			@Override public void onAddFriend(String name) {
+
+			@Override
+			public void onAddFriend(String name) {
 				if (clientConnection != null)
 					clientConnection.send(new Message(Message.Type.SEND_FRIEND_REQUEST, name));
 				scheduleProfileRefresh(name);
 			}
-			@Override public void onRemoveFriend(String name) {
+
+			@Override
+			public void onRemoveFriend(String name) {
 				if (clientConnection != null)
 					clientConnection.send(new Message(Message.Type.REMOVE_FRIEND, name));
 				scheduleProfileRefresh(name);
@@ -190,7 +281,10 @@ public class GuiClient extends Application implements GameController.Host {
 
 	private void scheduleProfileRefresh(String target) {
 		new Thread(() -> {
-			try { Thread.sleep(250); } catch (InterruptedException ignored) {}
+			try {
+				Thread.sleep(250);
+			} catch (InterruptedException ignored) {
+			}
 			Platform.runLater(() -> {
 				awaitingProfileFor = target;
 				if (clientConnection != null)
@@ -202,25 +296,42 @@ public class GuiClient extends Application implements GameController.Host {
 	private void openFriendsScene() {
 		awaitingProfileFor = null;
 		primaryStage.setScene(FriendsScene.build(friendEntries, pendingRequests, new FriendsScene.Actions() {
-			@Override public void onBack() { navigateToMain(); }
-			@Override public void onAddFriend(String name) {
+			@Override
+			public void onBack() {
+				navigateToMain();
+			}
+
+			@Override
+			public void onAddFriend(String name) {
 				if (clientConnection != null)
 					clientConnection.send(new Message(Message.Type.SEND_FRIEND_REQUEST, name));
 			}
-			@Override public void onRemoveFriend(String name) {
+
+			@Override
+			public void onRemoveFriend(String name) {
 				if (clientConnection != null)
 					clientConnection.send(new Message(Message.Type.REMOVE_FRIEND, name));
 			}
-			@Override public void onViewProfile(String name) { openProfileScene(name); }
-			@Override public void onAcceptRequest(String name) {
+
+			@Override
+			public void onViewProfile(String name) {
+				openProfileScene(name);
+			}
+
+			@Override
+			public void onAcceptRequest(String name) {
 				if (clientConnection != null)
 					clientConnection.send(new Message(Message.Type.ACCEPT_FRIEND_REQUEST, name));
 			}
-			@Override public void onDeclineRequest(String name) {
+
+			@Override
+			public void onDeclineRequest(String name) {
 				if (clientConnection != null)
 					clientConnection.send(new Message(Message.Type.DECLINE_FRIEND_REQUEST, name));
 			}
-			@Override public void onChallengeFriend(String name) {
+
+			@Override
+			public void onChallengeFriend(String name) {
 				if (clientConnection != null) {
 					clientConnection.send(new Message(Message.Type.CHALLENGE, name));
 					navigateToMatching();
@@ -231,9 +342,7 @@ public class GuiClient extends Application implements GameController.Host {
 			clientConnection.send(new Message(Message.Type.GET_USER_INFO, myUsername));
 	}
 
-	// ══════════════════════════════════════════════════════════════════════
-	//  GAME FLOW
-	// ══════════════════════════════════════════════════════════════════════
+	// game flow
 
 	private void startLocalGame() {
 		opponentName = "Player 2";
@@ -272,15 +381,19 @@ public class GuiClient extends Application implements GameController.Host {
 		});
 	}
 
-	// ══════════════════════════════════════════════════════════════════════
-	//  ACCOUNT MANAGEMENT
-	// ══════════════════════════════════════════════════════════════════════
+	// account management
 
 	private void attemptConnect(String username, String password, boolean isRegister) {
-		if (username.isEmpty()) { alertInfo("Please enter a username."); return; }
-		if (password == null || password.isEmpty()) { alertInfo("Please enter a password."); return; }
+		if (username.isEmpty()) {
+			alertInfo("Please enter a username.");
+			return;
+		}
+		if (password == null || password.isEmpty()) {
+			alertInfo("Please enter a password.");
+			return;
+		}
 		myUsername = username;
-		isOnline   = true;
+		isOnline = true;
 		navigateToMatching();
 
 		if (clientConnection == null) {
@@ -289,9 +402,12 @@ public class GuiClient extends Application implements GameController.Host {
 		}
 
 		final boolean reg = isRegister;
-		final String  pw  = password;
+		final String pw = password;
 		new Thread(() -> {
-			try { Thread.sleep(400); } catch (InterruptedException ignored) {}
+			try {
+				Thread.sleep(400);
+			} catch (InterruptedException ignored) {
+			}
 			Message msg = new Message(
 					reg ? Message.Type.REGISTER : Message.Type.LOGIN,
 					username, pw);
@@ -314,15 +430,13 @@ public class GuiClient extends Application implements GameController.Host {
 		navigateToMain();
 	}
 
-	// ══════════════════════════════════════════════════════════════════════
-	//  NETWORK MESSAGE HANDLER
-	// ══════════════════════════════════════════════════════════════════════
+	// network message handler
 
 	private void handleServerMessage(Message msg) {
 		switch (msg.type) {
 			case REGISTER_OK:
 			case LOGIN_OK:
-				loggedIn   = true;
+				loggedIn = true;
 				myUsername = msg.data != null ? msg.data : myUsername;
 				Platform.runLater(this::navigateToMain);
 				break;
@@ -362,7 +476,8 @@ public class GuiClient extends Application implements GameController.Host {
 						gc.drawBoard();
 						gc.updateStatus();
 						gc.updatePieceCountLabels();
-						if (gc.game.isGameOver()) gc.showGameOverDialog("Game over.");
+						if (gc.game.isGameOver())
+							gc.showGameOverDialog("Game over.");
 					}
 				});
 				break;
@@ -393,11 +508,12 @@ public class GuiClient extends Application implements GameController.Host {
 			case USER_INFO:
 				Platform.runLater(() -> {
 					String who = msg.data;
-					if (who == null) return;
+					if (who == null)
+						return;
 					if (who.equals(myUsername)) {
-						myWins   = msg.wins;
+						myWins = msg.wins;
 						myLosses = msg.losses;
-						myElo    = msg.elo;
+						myElo = msg.elo;
 					}
 					if (who.equals(awaitingProfileFor)) {
 						awaitingProfileFor = null;
@@ -414,14 +530,18 @@ public class GuiClient extends Application implements GameController.Host {
 					friendEntries.clear();
 					if (msg.data != null && !msg.data.isEmpty()) {
 						for (String part : msg.data.split(";")) {
-							if (!part.trim().isEmpty()) friendEntries.add(part);
+							if (!part.trim().isEmpty())
+								friendEntries.add(part);
 						}
 					}
 				});
 				break;
 
 			case FRIEND_ACTION_RESULT:
-				Platform.runLater(() -> { if (msg.data != null) alertInfo(msg.data); });
+				Platform.runLater(() -> {
+					if (msg.data != null)
+						alertInfo(msg.data);
+				});
 				break;
 
 			case PENDING_REQUESTS:
@@ -429,7 +549,8 @@ public class GuiClient extends Application implements GameController.Host {
 					pendingRequests.clear();
 					if (msg.data != null && !msg.data.isEmpty()) {
 						for (String part : msg.data.split(";")) {
-							if (!part.trim().isEmpty()) pendingRequests.add(part.trim());
+							if (!part.trim().isEmpty())
+								pendingRequests.add(part.trim());
 						}
 					}
 				});
@@ -450,11 +571,11 @@ public class GuiClient extends Application implements GameController.Host {
 						alert.setTitle("Incoming Challenge");
 						alert.setHeaderText(challenger + " has challenged you to a game!");
 						alert.setContentText("Do you want to accept?");
-						
+
 						ButtonType btnAccept = new ButtonType("Accept", ButtonBar.ButtonData.OK_DONE);
 						ButtonType btnDecline = new ButtonType("Decline", ButtonBar.ButtonData.CANCEL_CLOSE);
 						alert.getButtonTypes().setAll(btnAccept, btnDecline);
-						
+
 						Thread timer = new Thread(() -> {
 							try {
 								Thread.sleep(15000); // 15 seconds
@@ -464,11 +585,12 @@ public class GuiClient extends Application implements GameController.Host {
 										alert.close();
 									}
 								});
-							} catch (InterruptedException ignored) {}
+							} catch (InterruptedException ignored) {
+							}
 						});
 						timer.setDaemon(true);
 						timer.start();
-						
+
 						alert.showAndWait().ifPresent(result -> {
 							if (result == btnAccept) {
 								clientConnection.send(new Message(Message.Type.CHALLENGE_ACCEPT, challenger));
@@ -484,9 +606,11 @@ public class GuiClient extends Application implements GameController.Host {
 
 			case CHALLENGE_REJECTED:
 				Platform.runLater(() -> {
-					if (msg.data != null) alertInfo(msg.data);
+					if (msg.data != null)
+						alertInfo(msg.data);
 					// If we were waiting for a match that was rejected, return to where we were
-					if (primaryStage.getScene() != null && primaryStage.getScene().getRoot().toString().contains("MatchingScene")) {
+					if (primaryStage.getScene() != null
+							&& primaryStage.getScene().getRoot().toString().contains("MatchingScene")) {
 						navigateToMain(); // or stay? Usually back to main menu or friends
 					}
 				});
@@ -497,15 +621,13 @@ public class GuiClient extends Application implements GameController.Host {
 		}
 	}
 
-	// ══════════════════════════════════════════════════════════════════════
-	//  NAVIGATION HELPERS
-	// ══════════════════════════════════════════════════════════════════════
+	// navigation helpers
 
 	private void confirmBack() {
 		boolean willForfeit = gc.isOnline && gc.game != null && !gc.game.isGameOver() && !gc.gameOver;
 		Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-				willForfeit ? "Leaving will count as a forfeit." : "Return to main menu?",
-				ButtonType.YES, ButtonType.NO);
+				willForfeit ? "Leaving will count as a forfeit." : "Return to main menu?", ButtonType.YES,
+				ButtonType.NO);
 		confirm.setTitle("Leave Game");
 		confirm.setHeaderText(willForfeit ? "Forfeit and leave?" : "Return to main menu?");
 		confirm.showAndWait().ifPresent(btn -> {
@@ -524,9 +646,9 @@ public class GuiClient extends Application implements GameController.Host {
 	}
 
 	private void confirmForfeit() {
-		if (!gc.isOnline || gc.game == null || gc.game.isGameOver() || gc.gameOver) return;
-		Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-				"Forfeiting counts as a loss. Are you sure?",
+		if (!gc.isOnline || gc.game == null || gc.game.isGameOver() || gc.gameOver)
+			return;
+		Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Forfeiting counts as a loss. Are you sure?",
 				ButtonType.YES, ButtonType.NO);
 		confirm.setTitle("Forfeit");
 		confirm.setHeaderText("Forfeit this game?");
@@ -550,11 +672,13 @@ public class GuiClient extends Application implements GameController.Host {
 		});
 	}
 
-	// ── Helpers ───────────────────────────────────────────────────────────
+	// helpers
 
 	private boolean isFriend(String name) {
-		for (String e : friendEntries)
-			if (e.startsWith(name + "|")) return true;
+		for (String e : friendEntries) {
+			if (e.startsWith(name + "|"))
+				return true;
+		}
 		return false;
 	}
 
