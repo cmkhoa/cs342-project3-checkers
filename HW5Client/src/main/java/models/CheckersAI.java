@@ -16,7 +16,7 @@ public class CheckersAI {
     private final int maxDepth;
 
     public CheckersAI() {
-        this(5);
+        this(3);
     }
 
     public CheckersAI(int depth) {

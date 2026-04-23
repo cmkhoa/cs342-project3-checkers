@@ -152,7 +152,6 @@ public class CheckersLogic {
     }
 
     // ── Internal move generators ──────────────────────────────────────────────
-
     private List<int[]> simpleMoves(int row, int col) {
         List<int[]> result = new ArrayList<>();
         int piece = board[row][col];

@@ -1,4 +1,5 @@
 import models.Message;
+import models.User;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;

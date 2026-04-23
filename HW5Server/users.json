@@ -1,6 +1,6 @@
 {
   "users": [
-    {"username":"world","password":"123","wins":5,"losses":11,"elo":937,"friends":["hello"],"pendingRequests":[],"matchHistory":["hello|L|-11","hello|W|+22","hello|L|-10","hello|L|-12","hello|W|+22","hello|L|-11","hello|L|-12","hello|L|-14","hello|L|-15","hello|L|-17"]},
-    {"username":"hello","password":"123","wins":11,"losses":5,"elo":1063,"friends":["world"],"pendingRequests":[],"matchHistory":["world|W|+11","world|L|-22","world|W|+10","world|W|+12","world|L|-22","world|W|+11","world|W|+12","world|W|+14","world|W|+15","world|W|+17"]}
+    {"username":"world","password":"123","wins":6,"losses":11,"elo":959,"friends":["hello"],"pendingRequests":[],"matchHistory":["hello|W|+22","hello|L|-11","hello|W|+22","hello|L|-10","hello|L|-12","hello|W|+22","hello|L|-11","hello|L|-12","hello|L|-14","hello|L|-15"]},
+    {"username":"hello","password":"123","wins":11,"losses":6,"elo":1041,"friends":["world"],"pendingRequests":[],"matchHistory":["world|L|-22","world|W|+11","world|L|-22","world|W|+10","world|W|+12","world|L|-22","world|W|+11","world|W|+12","world|W|+14","world|W|+15"]}
   ]
 }

@@ -37,7 +37,7 @@ public class Message implements Serializable {
         USER_INFO, // server→client : data = username, wins, losses, online, friendsList
 
         // Friends
-        ADD_FRIEND, // (legacy, still handled) client→server : data = friend username
+        ADD_FRIEND, // client→server : data = friend username
         REMOVE_FRIEND, // client→server : data = friend username
         FRIEND_LIST, // server→client : data = semicolon-separated "name|online|wins|losses|elo"
         FRIEND_ACTION_RESULT, // server→client : data = status message

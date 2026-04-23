@@ -1,8 +1,7 @@
 import models.Message;
-
+import models.User;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Handles all incoming messages for a specific client connection.

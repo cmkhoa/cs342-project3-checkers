@@ -1,11 +1,13 @@
 // ============================================================================
 // NEW FILE: UserStore.java
 //   Introduced to satisfy the "json user store" checklist item.
-//   Provides persistent, thread-safe, JSON-backed storage of User records
+//   Provides persistent, thread-safe, JSON-backed storage of models.User records
 //   (wins, losses, friends) so that player profiles survive server restarts.
 //   Uses a hand-rolled minimal JSON reader/writer so no new Maven dependencies
 //   are required.
 // ============================================================================
+
+import models.User;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -15,7 +17,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 /**
- * Persistent JSON-backed store of User records.
+ * Persistent JSON-backed store of models.User records.
  *
  * File format (users.json):
  * {
