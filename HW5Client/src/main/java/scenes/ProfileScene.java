@@ -54,13 +54,11 @@ public class ProfileScene {
         profileCard.setPadding(new Insets(24, 24, 24, 24));
 
         Label name = new Label(targetUsername != null ? targetUsername.toUpperCase() : "—");
-        name.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #F5F0E8; -fx-letter-spacing: 2px;");
+        name.getStyleClass().add("profile-name");
         name.setWrapText(true);
 
         Label statusDot = new Label(online ? "● ONLINE" : "○ OFFLINE");
-        statusDot.setStyle(online
-                ? "-fx-font-size: 11px; -fx-text-fill: #52B788; -fx-letter-spacing: 2px; -fx-padding: 6 0 0 0;"
-                : "-fx-font-size: 11px; -fx-text-fill: #7A9A8A; -fx-letter-spacing: 2px; -fx-padding: 6 0 0 0;");
+        statusDot.getStyleClass().add(online ? "profile-status-online" : "profile-status-offline");
 
         profileCard.getChildren().addAll(name, statusDot);
 
@@ -144,7 +142,7 @@ public class ProfileScene {
         toggle.getStyleClass().add("btn-secondary");
         toggle.setMaxWidth(Double.MAX_VALUE);
         toggle.setAlignment(Pos.CENTER_LEFT);
-        toggle.setStyle(toggle.getStyle() + "-fx-font-size: 11px; -fx-letter-spacing: 1px; -fx-padding: 10 12;");
+        toggle.getStyleClass().add("profile-toggle");
 
         toggle.setOnAction(e -> {
             boolean show = !historyRows.isVisible();
@@ -173,28 +171,25 @@ public class ProfileScene {
                                       Set<String> friendNames, String myUsername,
                                       Actions actions) {
         // Result indicator
-        String resultDisplay;
-        String resultColor;
+        String resultClass;
         switch (result) {
-            case "W": resultDisplay = "WIN";  resultColor = "#52B788"; break;
-            case "L": resultDisplay = "LOSS"; resultColor = "#E85D5D"; break;
-            default:  resultDisplay = "DRAW"; resultColor = "#B0ABA3"; break;
+            case "W": resultDisplay = "WIN";  resultClass = "profile-result-w"; break;
+            case "L": resultDisplay = "LOSS"; resultClass = "profile-result-l"; break;
+            default:  resultDisplay = "DRAW"; resultClass = "profile-result-d"; break;
         }
 
         Label resultLabel = new Label(resultDisplay);
         resultLabel.setMinWidth(40);
-        resultLabel.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: " + resultColor
-                + "; -fx-letter-spacing: 1px;");
+        resultLabel.getStyleClass().addAll("profile-result", resultClass);
 
         // Opponent name
         Label opponentLabel = new Label(opponent);
-        opponentLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #1A1A1A; -fx-font-weight: bold;");
+        opponentLabel.getStyleClass().add("profile-opponent");
 
         // Elo change
         boolean positive = eloDelta.startsWith("+");
         Label eloLabel = new Label(eloDelta);
-        eloLabel.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: "
-                + (positive ? "#52B788" : "#E85D5D") + ";");
+        eloLabel.getStyleClass().addAll("profile-elo-change", positive ? "profile-elo-positive" : "profile-elo-negative");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -202,7 +197,7 @@ public class ProfileScene {
         HBox row = new HBox(8, resultLabel, opponentLabel, spacer, eloLabel);
         row.setAlignment(Pos.CENTER_LEFT);
         row.setPadding(new Insets(8, 12, 8, 12));
-        row.setStyle("-fx-background-color: #EDE8DF; -fx-background-radius: 8;");
+        row.getStyleClass().add("profile-match-row");
 
         // Add friend button if not already friends and not self
         boolean isSelf = opponent.equals(myUsername);
@@ -210,7 +205,7 @@ public class ProfileScene {
         if (!isSelf && !alreadyFriend) {
             Button addBtn = new Button("+");
             addBtn.getStyleClass().add("btn-green");
-            addBtn.setStyle("-fx-min-width: 30; -fx-max-width: 30; -fx-padding: 4 0; -fx-font-size: 13px;");
+            addBtn.getStyleClass().add("profile-add-btn");
             addBtn.setOnAction(e -> {
                 actions.onAddFriend(opponent);
                 addBtn.setText("✓");
@@ -226,13 +221,13 @@ public class ProfileScene {
 
     private static VBox statCell(String label, String value) {
         Label val = new Label(value);
-        val.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #1A1A1A;");
+        val.getStyleClass().add("profile-stat-val");
         Label lbl = new Label(label);
-        lbl.setStyle("-fx-font-size: 9px; -fx-text-fill: #7A7570; -fx-letter-spacing: 2px;");
+        lbl.getStyleClass().add("profile-stat-lbl");
 
         VBox cell = new VBox(4, val, lbl);
         cell.setAlignment(Pos.CENTER);
-        cell.setStyle("-fx-background-color: #EDE8DF; -fx-padding: 20 0;");
+        cell.getStyleClass().add("profile-stat-cell");
         HBox.setHgrow(cell, Priority.ALWAYS);
         cell.setMaxWidth(Double.MAX_VALUE);
         return cell;
