@@ -13,18 +13,14 @@ import javafx.scene.shape.Rectangle;
 
 /**
  * Login / Register scene.
- *
- * registerMode=true  → "Create Account" flow (REGISTER message)
- * registerMode=false → "Log In" flow (LOGIN message)
- *
- * Both flows now take a username AND password.
  */
 public class AuthScene {
 
     public interface Actions {
-        // CHANGED: now passes both username and password to the controller
         void onSubmit(String username, String password);
+
         void onToggle();
+
         void onBack();
     }
 
@@ -32,7 +28,7 @@ public class AuthScene {
         VBox root = UI.sceneRoot();
         root.setSpacing(0);
 
-        // ── Top bar ────────────────────────────────────────────────────────
+        // Top bar
         Rectangle strip = UI.accentBar(UI.W, 4);
 
         Button back = UI.backButton();
@@ -41,7 +37,7 @@ public class AuthScene {
         topBar.setPadding(new Insets(14, 8, 0, 8));
         topBar.setAlignment(Pos.CENTER_LEFT);
 
-        // ── Body ────────────────────────────────────────────────────────────
+        // Body
         VBox body = new VBox(0);
         body.setPadding(new Insets(40, 24, 24, 24));
         VBox.setVgrow(body, Priority.ALWAYS);
@@ -49,17 +45,15 @@ public class AuthScene {
         Label heading = UI.titleLabel(registerMode ? "CREATE\nACCOUNT" : "LOG IN");
         heading.setWrapText(true);
 
-        Label sub = UI.subtitleLabel(registerMode
-                ? "CHOOSE A USERNAME AND PASSWORD"
-                : "ENTER YOUR CREDENTIALS");
+        Label sub = UI.subtitleLabel(registerMode ? "CHOOSE A USERNAME AND PASSWORD" : "ENTER YOUR CREDENTIALS");
         sub.setPadding(new Insets(8, 0, 32, 0));
 
-        // Username
+        // Username field
         Label userLabel = UI.sectionLabel("USERNAME");
         userLabel.setPadding(new Insets(0, 0, 6, 0));
         TextField usernameField = UI.styledField(registerMode ? "e.g. ChessMaster99" : "Your username");
 
-        // ADDED: password field (uses PasswordField so input is masked)
+        // password field
         Label passLabel = UI.sectionLabel("PASSWORD");
         passLabel.setPadding(new Insets(16, 0, 6, 0));
         PasswordField passwordField = new PasswordField();
@@ -74,16 +68,15 @@ public class AuthScene {
         errorLabel.setVisible(false);
         errorLabel.setPadding(new Insets(8, 0, 0, 0));
 
+        // Submit button
         Button submit = UI.primaryButton(registerMode ? "CREATE ACCOUNT" : "LOG IN");
         submit.setPadding(new Insets(16, 0, 16, 0));
 
         VBox submitBox = new VBox(submit);
         submitBox.setPadding(new Insets(24, 0, 0, 0));
 
-        // ── Toggle link ─────────────────────────────────────────────────────
-        String toggleText = registerMode
-                ? "Already have an account?  LOG IN"
-                : "New here?  CREATE ACCOUNT";
+        // Toggle link
+        String toggleText = registerMode ? "Already have an account?  LOG IN" : "New here?  CREATE ACCOUNT";
         Button toggleBtn = new Button(toggleText);
         toggleBtn.getStyleClass().add("auth-toggle-btn");
         toggleBtn.setOnAction(e -> actions.onToggle());
@@ -95,10 +88,10 @@ public class AuthScene {
         VBox spacerGrow = new VBox();
         VBox.setVgrow(spacerGrow, Priority.ALWAYS);
 
-        // CHANGED: validates both username and password before submitting
+        // Submit Runnable - checks for empty username or password
         Runnable doSubmit = () -> {
             String uname = usernameField.getText().trim();
-            String pass  = passwordField.getText();
+            String pass = passwordField.getText();
             if (uname.isEmpty()) {
                 errorLabel.setText("Please enter a username.");
                 errorLabel.setVisible(true);
@@ -114,14 +107,18 @@ public class AuthScene {
         };
 
         submit.setOnAction(e -> doSubmit.run());
-        // ADDED: Enter in username jumps to password; Enter in password submits
+
+        // keyboard behavior
         usernameField.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER) passwordField.requestFocus();
+            if (e.getCode() == KeyCode.ENTER)
+                passwordField.requestFocus();
         });
         passwordField.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER) doSubmit.run();
+            if (e.getCode() == KeyCode.ENTER)
+                doSubmit.run();
         });
 
+        // add, set and build
         body.getChildren().addAll(
                 heading, sub,
                 userLabel, usernameField,
@@ -129,8 +126,7 @@ public class AuthScene {
                 errorLabel,
                 submitBox,
                 spacerGrow,
-                toggleBox
-        );
+                toggleBox);
 
         root.getChildren().addAll(strip, topBar, body);
 

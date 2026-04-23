@@ -11,18 +11,23 @@ import javafx.scene.shape.Rectangle;
 import java.util.List;
 
 /**
- * Friends list scene — view, add, remove friends + pending request inbox.
- * Each entry in friendEntries has format: "name|online|wins|losses|elo"
+ * Friends list scene
  */
 public class FriendsScene {
 
     public interface Actions {
         void onBack();
+
         void onAddFriend(String name);
+
         void onRemoveFriend(String name);
+
         void onViewProfile(String name);
+
         void onAcceptRequest(String name);
+
         void onDeclineRequest(String name);
+
         void onChallengeFriend(String name);
     }
 
@@ -30,7 +35,7 @@ public class FriendsScene {
         VBox root = UI.sceneRoot();
         root.setSpacing(0);
 
-        // ── Top strip ──────────────────────────────────────────────────────
+        // Top bar
         Rectangle strip = UI.accentBar(UI.W, 4);
 
         Button back = UI.backButton();
@@ -40,7 +45,7 @@ public class FriendsScene {
         topBar.setPadding(new Insets(12, 8, 0, 8));
         topBar.setAlignment(Pos.CENTER_LEFT);
 
-        // ── Body ────────────────────────────────────────────────────────────
+        // Body
         VBox body = new VBox(0);
         body.setPadding(new Insets(20, 24, 24, 24));
         VBox.setVgrow(body, Priority.ALWAYS);
@@ -49,7 +54,7 @@ public class FriendsScene {
         Label sub = UI.sectionLabel(friendEntries.size() + " FRIENDS");
         sub.setPadding(new Insets(4, 0, 12, 0));
 
-        // ── Pending requests ────────────────────────────────────────────────
+        // Pending requests
         if (pendingRequests != null && !pendingRequests.isEmpty()) {
             Label pendingLabel = UI.sectionLabel("FRIEND REQUESTS (" + pendingRequests.size() + ")");
             pendingLabel.setPadding(new Insets(0, 0, 8, 0));
@@ -68,9 +73,11 @@ public class FriendsScene {
 
         ScrollPane scroll = new ScrollPane();
         scroll.setFitToWidth(true);
-        scroll.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0; -fx-border-width: 0;");
+        scroll.setStyle(
+                "-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0; -fx-border-width: 0;");
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
+        // friend list container
         VBox listContainer = new VBox(4);
         scroll.setContent(listContainer);
 
@@ -79,12 +86,13 @@ public class FriendsScene {
         } else {
             for (String e : friendEntries) {
                 String[] parts = e.split("\\|");
-                if (parts.length < 5) continue;
-                String name   = parts[0];
-                boolean on    = "1".equals(parts[1]);
-                String wins   = parts[2];
+                if (parts.length < 5)
+                    continue;
+                String name = parts[0];
+                boolean on = "1".equals(parts[1]);
+                String wins = parts[2];
                 String losses = parts[3];
-                String elo    = parts[4];
+                String elo = parts[4];
 
                 HBox row = new HBox(8);
                 row.setAlignment(Pos.CENTER_LEFT);
@@ -130,7 +138,7 @@ public class FriendsScene {
             }
         }
 
-        // ── Send friend request ─────────────────────────────────────────────
+        // Send friend request
         Label addLabel = UI.sectionLabel("SEND REQUEST");
         addLabel.setPadding(new Insets(16, 0, 8, 0));
 
@@ -149,7 +157,10 @@ public class FriendsScene {
             }
         };
         addBtn.setOnAction(e -> doAdd.run());
-        addField.setOnKeyPressed(e -> { if (e.getCode() == KeyCode.ENTER) doAdd.run(); });
+        addField.setOnKeyPressed(e -> {
+            if (e.getCode() == KeyCode.ENTER)
+                doAdd.run();
+        });
 
         HBox addRow = new HBox(10, addField, addBtn);
         addRow.setAlignment(Pos.CENTER);
@@ -161,8 +172,7 @@ public class FriendsScene {
                 scroll,
                 addLabel, addRow,
                 vspacer(10),
-                hint
-        );
+                hint);
 
         root.getChildren().addAll(strip, topBar, body);
 

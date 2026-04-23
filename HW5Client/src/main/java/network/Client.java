@@ -14,16 +14,16 @@ import java.util.function.Consumer;
  */
 public class Client extends Thread {
 
-	private Socket             socket;
+	private Socket socket;
 	private ObjectOutputStream out;
-	private ObjectInputStream  in;
+	private ObjectInputStream in;
 	private final Consumer<Message> callback;
 
 	private volatile boolean running = true;
 
 	public Client(Consumer<Message> callback) {
 		this.callback = callback;
-		setDaemon(true);   // don't prevent JVM shutdown
+		setDaemon(true); // don't prevent JVM shutdown
 	}
 
 	@Override
@@ -33,7 +33,7 @@ public class Client extends Thread {
 			// Create output stream FIRST to avoid deadlock
 			out = new ObjectOutputStream(socket.getOutputStream());
 			out.flush();
-			in  = new ObjectInputStream(socket.getInputStream());
+			in = new ObjectInputStream(socket.getInputStream());
 			socket.setTcpNoDelay(true);
 		} catch (Exception e) {
 			System.err.println("Could not connect to server: " + e.getMessage());
@@ -60,19 +60,23 @@ public class Client extends Thread {
 
 	/** Send a message to the server. Safe to call from any thread. */
 	public synchronized void send(Message msg) {
-		if (out == null) return;
+		if (out == null)
+			return;
 		try {
 			out.writeObject(msg);
 			out.flush();
-			out.reset();   // prevent stale-object caching in ObjectOutputStream
+			out.reset();
 		} catch (IOException e) {
 			System.err.println("Send failed: " + e.getMessage());
 		}
 	}
 
-	/** Gracefully stop the connection. */
 	public void disconnect() {
 		running = false;
-		try { if (socket != null) socket.close(); } catch (IOException ignored) {}
+		try {
+			if (socket != null)
+				socket.close();
+		} catch (IOException ignored) {
+		}
 	}
 }

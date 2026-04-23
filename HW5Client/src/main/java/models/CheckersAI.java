@@ -1,15 +1,13 @@
 package models;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Minimax-based AI for Checkers.
+ * Minimax-based AI player.
  *
- * The AI always plays as BLACK (player 2, pieces on rows 0-2).
- * Uses the evaluation function from the algorithm document,
- * adapted for our 8x8 board.
- *
- * Depth is configurable (default 5 — fast yet competent).
+ * The AI always plays as BLACK (player 2).
+ * Reference: https://github.com/Gualor/checkers-minimax
  */
 public class CheckersAI {
 
@@ -23,25 +21,25 @@ public class CheckersAI {
         this.maxDepth = depth;
     }
 
-    // ── Public API ─────────────────────────────────────────────────────────
-
     /**
-     * Given the current game state (where it is BLACK's turn), return the
-     * best move as {fromRow, fromCol, toRow, toCol}.
+     * Return the best move for the AI
      *
      * If the AI is mid-jump it returns only the continuation move.
-     * Returns null if no move is available (should not happen if called correctly).
+     * Returns null if no move is available.
      */
     public int[] bestMove(CheckersLogic game) {
+        // create a board to simulate the player's possible moves
         int[][] board = game.getBoard();
         boolean redTurn = game.isRedTurn();
 
         List<int[]> allMoves = getAllMoves(game, board, redTurn);
-        if (allMoves.isEmpty()) return null;
+        if (allMoves.isEmpty())
+            return null;
 
         int bestScore = Integer.MIN_VALUE;
         int[] best = null;
 
+        // loop through all possible moves
         for (int[] move : allMoves) {
             CheckersLogic sim = cloneGame(game);
             sim.makeMove(move[0], move[1], move[2], move[3]);
@@ -83,7 +81,8 @@ public class CheckersAI {
                 int eval = minimax(sim, depth - 1, alpha, beta, false);
                 maxEval = Math.max(maxEval, eval);
                 alpha = Math.max(alpha, eval);
-                if (beta <= alpha) break;
+                if (beta <= alpha)
+                    break;
             }
             return maxEval;
         } else {
@@ -95,7 +94,8 @@ public class CheckersAI {
                 int eval = minimax(sim, depth - 1, alpha, beta, true);
                 minEval = Math.min(minEval, eval);
                 beta = Math.min(beta, eval);
-                if (beta <= alpha) break;
+                if (beta <= alpha)
+                    break;
             }
             return minEval;
         }
@@ -107,8 +107,10 @@ public class CheckersAI {
     private int evaluate(CheckersLogic game) {
         if (game.isGameOver()) {
             String w = game.getWinner();
-            if ("BLACK".equals(w)) return  1000;
-            if ("RED".equals(w))   return -1000;
+            if ("BLACK".equals(w))
+                return 1000;
+            if ("RED".equals(w))
+                return -1000;
             return 0; // draw
         }
 
@@ -118,10 +120,11 @@ public class CheckersAI {
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
                 int piece = board[r][c];
-                if (piece == CheckersLogic.EMPTY) continue;
+                if (piece == CheckersLogic.EMPTY)
+                    continue;
 
                 boolean isBlack = (piece == CheckersLogic.BLACK || piece == CheckersLogic.BLACK_KING);
-                boolean isKing  = (piece == CheckersLogic.RED_KING || piece == CheckersLogic.BLACK_KING);
+                boolean isKing = (piece == CheckersLogic.RED_KING || piece == CheckersLogic.BLACK_KING);
                 int sign = isBlack ? 1 : -1;
 
                 // Piece value: king=100, regular=20
@@ -131,11 +134,11 @@ public class CheckersAI {
                 // BLACK advances toward row 7, RED advances toward row 0
                 double advancement;
                 if (isBlack) {
-                    advancement = (double) r / 7.0;  // 0 at top, 1 at bottom (promotion)
+                    advancement = (double) r / 7.0; // 0 at top, 1 at bottom (promotion)
                 } else {
-                    advancement = (double) (7 - r) / 7.0;  // 0 at bottom, 1 at top (promotion)
+                    advancement = (double) (7 - r) / 7.0; // 0 at bottom, 1 at top (promotion)
                 }
-                score += sign * (int)(advancement * 10);
+                score += sign * (int) (advancement * 10);
 
                 // Positional: prefer edges (harder to capture)
                 double centerDist = Math.abs(c - 3.5);
@@ -159,7 +162,7 @@ public class CheckersAI {
         if (game.isMidJump()) {
             int jr = game.getJumpingRow(), jc = game.getJumpingCol();
             for (int[] dest : game.getLegalMoves(jr, jc)) {
-                moves.add(new int[]{jr, jc, dest[0], dest[1]});
+                moves.add(new int[] { jr, jc, dest[0], dest[1] });
             }
             return moves;
         }
@@ -170,21 +173,25 @@ public class CheckersAI {
                 boolean belongs = redTurn
                         ? (p == CheckersLogic.RED || p == CheckersLogic.RED_KING)
                         : (p == CheckersLogic.BLACK || p == CheckersLogic.BLACK_KING);
-                if (!belongs) continue;
+                if (!belongs)
+                    continue;
                 for (int[] dest : game.getLegalMoves(r, c)) {
-                    moves.add(new int[]{r, c, dest[0], dest[1]});
+                    moves.add(new int[] { r, c, dest[0], dest[1] });
                 }
             }
         }
         return moves;
     }
 
-    /** Complete any remaining multi-jump sequence greedily (pick first available). */
+    /**
+     * Complete any remaining multi-jump sequence greedily (pick first available).
+     */
     private void completeMultiJump(CheckersLogic sim) {
         while (sim.isMidJump()) {
             int jr = sim.getJumpingRow(), jc = sim.getJumpingCol();
             List<int[]> captures = sim.getLegalMoves(jr, jc);
-            if (captures.isEmpty()) break;
+            if (captures.isEmpty())
+                break;
             sim.makeMove(jr, jc, captures.get(0)[0], captures.get(0)[1]);
         }
     }

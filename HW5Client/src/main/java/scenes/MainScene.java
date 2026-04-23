@@ -9,20 +9,25 @@ import javafx.scene.layout.*;
 import javafx.scene.shape.Rectangle;
 
 /**
- * Main menu scene — two variants:
- *   • Logged-out: Play Local / Log In / Register
- *   • Logged-in:  Play Local / Find Match / My Profile / Friends / Log Out
+ * Main menu scene (logged in and logged out)
  */
 public class MainScene {
 
     public interface Actions {
         void onPlayLocal();
+
         void onPlayAI();
+
         void onLogin();
+
         void onRegister();
+
         void onFindMatch();
+
         void onProfile();
+
         void onFriends();
+
         void onLogout();
     }
 
@@ -43,14 +48,12 @@ public class MainScene {
         return scene;
     }
 
-    // ── Header ─────────────────────────────────────────────────────────────
-
+    // Header
     private static VBox buildHeader() {
         // Decorative accent strip
         Rectangle strip = UI.accentBar(UI.W, 4);
 
         Label title = UI.titleLabel("CHECKERS");
-
         Label sub = UI.subtitleLabel("MULTIPLAYER BOARD GAME");
 
         VBox header = new VBox(6, strip, title, sub);
@@ -60,15 +63,16 @@ public class MainScene {
         // override padding top since we have the strip
         header.setPadding(new Insets(0, 24, 24, 24));
 
-        VBox wrapper = new VBox(strip, new VBox(6, title, sub) {{
-            setPadding(new Insets(24, 24, 24, 24));
-        }});
+        VBox wrapper = new VBox(strip, new VBox(6, title, sub) {
+            {
+                setPadding(new Insets(24, 24, 24, 24));
+            }
+        });
         wrapper.getStyleClass().add("divider-line");
         return wrapper;
     }
 
-    // ── Logged-out body ────────────────────────────────────────────────────
-
+    // Logged-out body
     private static VBox buildLoggedOutBody(Actions actions) {
         VBox body = new VBox(0);
         body.setPadding(new Insets(36, 24, 24, 24));
@@ -76,9 +80,9 @@ public class MainScene {
 
         // Play local section
         Label playSection = UI.sectionLabel("OFFLINE");
-        Button playLocal = UI.primaryButton("Pass & Play");
+        Button playLocal = UI.primaryButton("PASS & PLAY");
         playLocal.setOnAction(e -> actions.onPlayLocal());
-        Button playAI = UI.primaryButton("PLAY AI");
+        Button playAI = UI.primaryButton("SINGLE PLAYER");
         playAI.setOnAction(e -> actions.onPlayAI());
 
         // Account section
@@ -93,30 +97,28 @@ public class MainScene {
         hint.setPadding(new Insets(8, 0, 0, 0));
 
         body.getChildren().addAll(
-            playSection,
-            vspacer(8),
-            playLocal,
-            vspacer(8),
-            playAI,
-            accountSection,
-            vspacer(8),
-            login,
-            vspacer(8),
-            register,
-            vspacer(12),
-            hint
-        );
+                playSection,
+                vspacer(8),
+                playLocal,
+                vspacer(8),
+                playAI,
+                accountSection,
+                vspacer(8),
+                login,
+                vspacer(8),
+                register,
+                vspacer(12),
+                hint);
         return body;
     }
 
-    // ── Logged-in body ─────────────────────────────────────────────────────
-
+    // Logged-in body
     private static VBox buildLoggedInBody(String username, Actions actions) {
         VBox body = new VBox(0);
         body.setPadding(new Insets(24, 24, 24, 24));
         VBox.setVgrow(body, Priority.ALWAYS);
 
-        // User chip
+        // User name chip
         HBox chip = new HBox(8);
         chip.setAlignment(Pos.CENTER_LEFT);
         chip.getStyleClass().add("user-chip");
@@ -128,21 +130,23 @@ public class MainScene {
         uname.getStyleClass().add("user-chip-label");
         chip.getChildren().addAll(dot, uname);
 
+        // Play options
         Label playSection = UI.sectionLabel("PLAY");
         playSection.setPadding(new Insets(24, 0, 0, 0));
 
-        Button playLocal  = UI.primaryButton("PLAY LOCAL");
-        Button playAI     = UI.primaryButton("PLAY AI");
-        Button findMatch  = UI.primaryButton("FIND MATCH");
+        Button playLocal = UI.primaryButton("PASS & PLAY");
+        Button playAI = UI.primaryButton("SINGLE PLAYER");
+        Button findMatch = UI.primaryButton("MULTIPLAYER");
         playLocal.setOnAction(e -> actions.onPlayLocal());
         playAI.setOnAction(e -> actions.onPlayAI());
         findMatch.setOnAction(e -> actions.onFindMatch());
 
+        // Account options
         Label accountSection = UI.sectionLabel("ACCOUNT");
         accountSection.setPadding(new Insets(24, 0, 0, 0));
 
         Button profile = UI.secondaryButton("MY PROFILE");
-        Button friends = UI.secondaryButton("FRIENDS");
+        Button friends = UI.secondaryButton("MY FRIENDS");
         profile.setMaxWidth(Double.MAX_VALUE);
         friends.setMaxWidth(Double.MAX_VALUE);
         profile.setOnAction(e -> actions.onProfile());
@@ -150,10 +154,8 @@ public class MainScene {
 
         Button logout = UI.dangerButton("LOG OUT");
         logout.setMaxWidth(Double.MAX_VALUE);
-        logout.setPadding(new Insets(11, 0, 11, 0));
         logout.setPadding(new Insets(11, 20, 11, 20));
         logout.setOnAction(e -> actions.onLogout());
-
 
         VBox logoutBox = new VBox(logout);
         logoutBox.setAlignment(Pos.BOTTOM_CENTER);
@@ -166,11 +168,11 @@ public class MainScene {
                 playLocal, vspacer(8), playAI, vspacer(8), findMatch,
                 accountSection, vspacer(8),
                 profile, vspacer(8), friends,
-                logoutBox
-        );
+                logoutBox);
         return body;
     }
 
+    // adds a spacer between buttons for consistent spacing
     private static Region vspacer(double h) {
         Region r = new Region();
         r.setPrefHeight(h);

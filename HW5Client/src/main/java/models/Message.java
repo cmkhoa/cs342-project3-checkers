@@ -6,63 +6,62 @@ import java.util.List;
 
 /**
  * Serializable message passed between client and server.
- * All fields are public for simplicity; unused fields default to null/0.
+ * All fields are public for simplicity, unused fields default to null/0
  */
 public class Message implements Serializable {
     static final long serialVersionUID = 47L;
 
     public enum Type {
         // Account flow
-        REGISTER, // client→server : data = desired username
-        REGISTER_OK, // server→client : data = username
-        REGISTER_FAIL, // server→client : data = error reason
-        LOGIN, // client→server : data = existing username
-        LOGIN_OK, // server→client : data = username
-        LOGIN_FAIL, // server→client : data = error reason
+        REGISTER, // client -> server
+        REGISTER_OK, // server -> client
+        REGISTER_FAIL, // server -> client
+        LOGIN, // client -> server
+        LOGIN_OK, // server -> client
+        LOGIN_FAIL, // server -> client
 
         // Matchmaking
-        WAITING, // server→client : queued, waiting for opponent
-        GAME_START, // server→client : data = opponent username, playerNum = 1 or 2
+        WAITING, // client -> server
+        GAME_START, // server -> client
 
         // Gameplay
-        MOVE, // client↔server : fromRow,fromCol,toRow,toCol
-        CHAT, // client↔server : data = "username: text"
-        GAME_OVER, // client→server or server→client : data = winning username or "DRAW"
-        PLAY_AGAIN, // client→server : wants rematch
-        QUIT_GAME, // client→server : disconnecting/returning to menu
-        FORFEIT, // client→server : concede mid-game (counts as a loss)
+        MOVE, // client <-> server
+        CHAT, // client <-> server
+        GAME_OVER, // client -> server or server -> client
+        PLAY_AGAIN, // client -> server
+        QUIT_GAME, // client -> server
+        FORFEIT, // client -> server
 
-        // User-info lookup
-        GET_USER_INFO, // client→server : data = target username (self if null)
-        USER_INFO, // server→client : data = username, wins, losses, online, friendsList
+        // user-info lookup
+        GET_USER_INFO, // client -> server
+        USER_INFO, // server -> client
 
-        // Friends
-        ADD_FRIEND, // client→server : data = friend username
-        REMOVE_FRIEND, // client→server : data = friend username
-        FRIEND_LIST, // server→client : data = semicolon-separated "name|online|wins|losses|elo"
-        FRIEND_ACTION_RESULT, // server→client : data = status message
+        // friends feature
+        REMOVE_FRIEND, // client -> server
+        FRIEND_LIST, // server -> client
+        FRIEND_ACTION_RESULT, // server -> client
 
-        // Friend-request flow
-        SEND_FRIEND_REQUEST, // client→server : data = target username
-        FRIEND_REQUEST_RECEIVED, // server→client : data = requester username
-        ACCEPT_FRIEND_REQUEST, // client→server : data = requester username
-        DECLINE_FRIEND_REQUEST, // client→server : data = requester username
-        PENDING_REQUESTS, // server→client : data = semicolon-separated requester usernames
+        // friend-request flow
+        SEND_FRIEND_REQUEST, // client -> server
+        FRIEND_REQUEST_RECEIVED, // server -> client
+        ACCEPT_FRIEND_REQUEST, // client -> server
+        DECLINE_FRIEND_REQUEST, // client -> server
+        PENDING_REQUESTS, // server -> client
 
         // Direct Challenges / Rematches
-        CHALLENGE, // client→server : data = target username
-        CHALLENGE_INCOMING, // server→client : data = challenger username
-        CHALLENGE_ACCEPT, // client→server : data = challenger username
-        CHALLENGE_DECLINE, // client→server : data = challenger username
-        CHALLENGE_REJECTED // server→client : data = error or decline reason
+        CHALLENGE, // client -> server
+        CHALLENGE_INCOMING, // server -> client
+        CHALLENGE_ACCEPT, // client -> server
+        CHALLENGE_DECLINE, // client -> server
+        CHALLENGE_REJECTED // server -> client
     }
 
-    public String password;
     public Type type;
     public String data;
     public int fromRow = -1, fromCol = -1, toRow = -1, toCol = -1;
     public int playerNum; // 1 = RED (bottom), 2 = BLACK (top)
 
+    // payload fields used by USER_INFO responses
     public int wins;
     public int losses;
     public int elo;
@@ -71,6 +70,7 @@ public class Message implements Serializable {
     public List<String> friends = new ArrayList<>();
     /** Each entry: "opponent|W or L or D|eloChange" — most recent first. */
     public List<String> matchHistory = new ArrayList<>();
+    public String password;
 
     public Message() {
     }

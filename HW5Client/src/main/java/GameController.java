@@ -21,46 +21,54 @@ import java.util.List;
  */
 public class GameController {
 
-    /** Callback interface so the controller can request actions from the host app. */
+    // Host callback interface
     public interface Host {
         void showMain();
+
         void showGame();
+
         void showMatching();
+
         void sendMessage(Message msg);
+
         void showAlert(String text);
+
         boolean isLoggedIn();
+
         boolean hasConnection();
+
         String getMyUsername();
+
         String getOpponentName();
+
         void closePendingAlert();
     }
 
-    // ── State ──────────────────────────────────────────────────────────────
+    // state
     private final Host host;
 
     CheckersLogic game;
-    GameScene     activeGameScene;
-    boolean       isOnline;
-    boolean       isAI;
-    boolean       gameOver;
-    boolean       resultReported;
-    int           myPlayerNum = 1;
+    GameScene activeGameScene;
+    boolean isOnline;
+    boolean isAI;
+    boolean gameOver;
+    boolean resultReported;
+    int myPlayerNum = 1;
 
-    private CheckersAI   ai;
-    private int          selectedRow = -1;
-    private int          selectedCol = -1;
-    private List<int[]>  legalMovesForSelected = new ArrayList<>();
-    public  Alert        gameOverAlert;
+    private CheckersAI ai;
+    private int selectedRow = -1;
+    private int selectedCol = -1;
+    private List<int[]> legalMovesForSelected = new ArrayList<>();
+    public Alert gameOverAlert;
 
     public GameController(Host host) {
         this.host = host;
     }
 
-    // ── Game lifecycle ─────────────────────────────────────────────────────
-
+    // game lifecycle
     public void initGame() {
-        game           = new CheckersLogic();
-        gameOver       = false;
+        game = new CheckersLogic();
+        gameOver = false;
         resultReported = false;
         selectedRow = selectedCol = -1;
         legalMovesForSelected = new ArrayList<>();
@@ -69,41 +77,44 @@ public class GameController {
 
     public void configureLocal() {
         isOnline = false;
-        isAI     = false;
-        ai       = null;
+        isAI = false;
+        ai = null;
     }
 
     public void configureAI() {
         isOnline = false;
-        isAI     = true;
-        ai       = new CheckersAI(5);
+        isAI = true;
+        ai = new CheckersAI(5);
     }
 
     public void configureOnline(int playerNum) {
-        isOnline    = true;
-        isAI        = false;
-        ai          = null;
+        isOnline = true;
+        isAI = false;
+        ai = null;
         myPlayerNum = playerNum;
     }
 
-    /** Call after showGame() for AI mode — BLACK moves first. */
+    // Call after showGame() for AI mode — BLACK moves first.
     public void startAIFirstMove() {
         scheduleAIMove();
     }
 
-    // ── Board interaction ──────────────────────────────────────────────────
-
+    // Board interaction
     public void handleBoardClick(double x, double y) {
-        if (game == null || game.isGameOver() || gameOver) return;
+        if (game == null || game.isGameOver() || gameOver)
+            return;
         if (isOnline) {
             boolean myTurn = (myPlayerNum == 1) == game.isRedTurn();
-            if (!myTurn) return;
+            if (!myTurn)
+                return;
         }
-        if (isAI && !game.isRedTurn()) return;
+        if (isAI && !game.isRedTurn())
+            return;
 
         int rawRow = (int) (y / UI.CELL);
         int rawCol = (int) (x / UI.CELL);
-        if (rawRow < 0 || rawRow >= 8 || rawCol < 0 || rawCol >= 8) return;
+        if (rawRow < 0 || rawRow >= 8 || rawCol < 0 || rawCol >= 8)
+            return;
 
         int clickRow = (isOnline && myPlayerNum == 2) ? 7 - rawRow : rawRow;
         int clickCol = (isOnline && myPlayerNum == 2) ? 7 - rawCol : rawCol;
@@ -117,7 +128,8 @@ public class GameController {
             }
         }
 
-        if (game.isMidJump()) return;
+        if (game.isMidJump())
+            return;
 
         List<int[]> moves = game.getLegalMoves(clickRow, clickCol);
         if (!moves.isEmpty()) {
@@ -136,8 +148,10 @@ public class GameController {
 
         if (isOnline && host.hasConnection()) {
             Message msg = new Message(Message.Type.MOVE);
-            msg.fromRow = fr; msg.fromCol = fc;
-            msg.toRow   = tr; msg.toCol   = tc;
+            msg.fromRow = fr;
+            msg.fromCol = fc;
+            msg.toRow = tr;
+            msg.toCol = tc;
             host.sendMessage(msg);
         }
 
@@ -165,19 +179,26 @@ public class GameController {
     // ── AI ──────────────────────────────────────────────────────────────────
 
     private void scheduleAIMove() {
-        if (ai == null || game == null || game.isGameOver() || gameOver) return;
+        if (ai == null || game == null || game.isGameOver() || gameOver)
+            return;
         new Thread(() -> {
-            try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignored) {
+            }
             int[] move = ai.bestMove(game);
-            if (move == null) return;
+            if (move == null)
+                return;
             Platform.runLater(() -> {
-                if (game == null || game.isGameOver() || gameOver) return;
+                if (game == null || game.isGameOver() || gameOver)
+                    return;
                 game.makeMove(move[0], move[1], move[2], move[3]);
 
                 while (game.isMidJump()) {
                     int jr = game.getJumpingRow(), jc = game.getJumpingCol();
                     List<int[]> caps = game.getLegalMoves(jr, jc);
-                    if (caps.isEmpty()) break;
+                    if (caps.isEmpty())
+                        break;
                     int[] cont = ai.bestMove(game);
                     if (cont != null) {
                         game.makeMove(cont[0], cont[1], cont[2], cont[3]);
@@ -191,7 +212,8 @@ public class GameController {
                 drawBoard();
                 updateStatus();
                 updatePieceCountLabels();
-                if (game.isGameOver()) handleGameOver();
+                if (game.isGameOver())
+                    handleGameOver();
             });
         }).start();
     }
@@ -199,7 +221,8 @@ public class GameController {
     // ── Board rendering ────────────────────────────────────────────────────
 
     public void drawBoard() {
-        if (activeGameScene == null || activeGameScene.boardCanvas == null || game == null) return;
+        if (activeGameScene == null || activeGameScene.boardCanvas == null || game == null)
+            return;
         GraphicsContext gc = activeGameScene.boardCanvas.getGraphicsContext2D();
         int[][] board = game.getBoard();
         List<int[]> capturePieces = game.isGameOver() ? new ArrayList<>() : game.getPiecesWithCaptures();
@@ -231,7 +254,8 @@ public class GameController {
                 }
 
                 int piece = board[r][c];
-                if (piece != CheckersLogic.EMPTY) drawPiece(gc, piece, x, y);
+                if (piece != CheckersLogic.EMPTY)
+                    drawPiece(gc, piece, x, y);
 
                 if (isLegalDest(r, c) && piece == CheckersLogic.EMPTY) {
                     gc.setFill(Color.web("#2D6A4F", 0.55));
@@ -251,8 +275,8 @@ public class GameController {
 
     private void drawPiece(GraphicsContext gc, int piece, double cx, double cy) {
         double pad = UI.CELL * 0.11;
-        double sz  = UI.CELL - 2 * pad;
-        double px  = cx + pad, py = cy + pad;
+        double sz = UI.CELL - 2 * pad;
+        double px = cx + pad, py = cy + pad;
 
         gc.setFill(Color.color(0, 0, 0, 0.15));
         gc.fillOval(px + 2, py + 3, sz, sz);
@@ -276,10 +300,10 @@ public class GameController {
         }
     }
 
-    // ── Status updates ─────────────────────────────────────────────────────
-
+    // status updates
     public void updateStatus() {
-        if (activeGameScene == null || activeGameScene.statusLabel == null || game == null) return;
+        if (activeGameScene == null || activeGameScene.statusLabel == null || game == null)
+            return;
         if (game.isGameOver() || gameOver) {
             activeGameScene.statusLabel.setText("GAME OVER");
             activeGameScene.statusLabel.getStyleClass().removeAll("status-bar-turn", "status-bar-wait");
@@ -298,14 +322,16 @@ public class GameController {
             myTurn = true;
             current = game.isRedTurn() ? "RED'S TURN" : "BLACK'S TURN";
         }
-        if (game.isMidJump()) current += "  —  MUST JUMP";
+        if (game.isMidJump())
+            current += "  —  MUST JUMP";
         activeGameScene.statusLabel.setText(current);
         activeGameScene.statusLabel.getStyleClass().removeAll("status-bar-turn", "status-bar-wait", "status-bar-text");
         activeGameScene.statusLabel.getStyleClass().add(myTurn ? "status-bar-turn" : "status-bar-wait");
     }
 
     public void updatePieceCountLabels() {
-        if (activeGameScene == null || game == null) return;
+        if (activeGameScene == null || game == null)
+            return;
         int[] counts = game.getPieceCounts();
         if (activeGameScene.redCountLabel != null)
             activeGameScene.redCountLabel.setText("● " + counts[0]);
@@ -317,8 +343,9 @@ public class GameController {
 
     public void handleServerGameOver(Message msg) {
         String winnerUsername = msg.data;
-        if (gameOver) return;
-        gameOver       = true;
+        if (gameOver)
+            return;
+        gameOver = true;
         resultReported = true;
         updateStatus();
         drawBoard();
@@ -349,12 +376,12 @@ public class GameController {
         String winnerUsername = null;
 
         if ("DRAW".equals(winnerColour)) {
-            resultText    = "It's a draw!";
+            resultText = "It's a draw!";
             winnerUsername = "DRAW";
         } else if (isOnline) {
             boolean iWon = ("RED".equals(winnerColour) && myPlayerNum == 1)
                     || ("BLACK".equals(winnerColour) && myPlayerNum == 2);
-            resultText    = iWon ? "You win! 🎉" : "You lose.";
+            resultText = iWon ? "You win! 🎉" : "You lose.";
             winnerUsername = iWon ? host.getMyUsername() : host.getOpponentName();
         } else if (isAI) {
             boolean iWon = "RED".equals(winnerColour);
@@ -380,16 +407,16 @@ public class GameController {
 
         ButtonType rematch = null;
         ButtonType playAgain;
-        
+
         if (isOnline) {
             rematch = new ButtonType("Rematch");
             playAgain = new ButtonType("Find New Match");
         } else {
             playAgain = new ButtonType("Play Again");
         }
-        
+
         ButtonType mainMenu = new ButtonType("Main Menu", ButtonBar.ButtonData.CANCEL_CLOSE);
-        
+
         if (isOnline) {
             gameOverAlert.getButtonTypes().setAll(rematch, playAgain, mainMenu);
         } else {
@@ -440,18 +467,21 @@ public class GameController {
 
     private boolean isLegalDest(int r, int c) {
         for (int[] m : legalMovesForSelected)
-            if (m[0] == r && m[1] == c) return true;
+            if (m[0] == r && m[1] == c)
+                return true;
         return false;
     }
 
     private boolean isCaptureRequired(List<int[]> list, int r, int c) {
         for (int[] pos : list)
-            if (pos[0] == r && pos[1] == c) return true;
+            if (pos[0] == r && pos[1] == c)
+                return true;
         return false;
     }
 
     public void sendChat(String text) {
-        if (activeGameScene == null) return;
+        if (activeGameScene == null)
+            return;
         String username = host.getMyUsername();
         String line = username.isEmpty() ? text : username + ": " + text;
         activeGameScene.chatListView.getItems().add(line);

@@ -14,7 +14,7 @@ import javafx.scene.shape.Rectangle;
  */
 public class UI {
 
-    // Window dimensions (18:9 vertical)
+    // Window dimensions
     public static final int W = 420;
     public static final int H = 840;
 
