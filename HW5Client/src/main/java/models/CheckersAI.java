@@ -154,7 +154,7 @@ public class CheckersAI {
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
-    /** Get all possible {fromR, fromC, toR, toC} moves for the current player. */
+    // Get all possible {fromR, fromC, toR, toC} moves for the current player.
     private List<int[]> getAllMoves(CheckersLogic game, int[][] board, boolean redTurn) {
         List<int[]> moves = new ArrayList<>();
 
@@ -183,9 +183,7 @@ public class CheckersAI {
         return moves;
     }
 
-    /**
-     * Complete any remaining multi-jump sequence greedily (pick first available).
-     */
+    // Complete any remaining multi-jump sequence greedily (pick first available).
     private void completeMultiJump(CheckersLogic sim) {
         while (sim.isMidJump()) {
             int jr = sim.getJumpingRow(), jc = sim.getJumpingCol();
@@ -196,7 +194,7 @@ public class CheckersAI {
         }
     }
 
-    /** Deep-clone a CheckersLogic by replaying all state. */
+    // Deep-clone a CheckersLogic by replaying all state.
     private CheckersLogic cloneGame(CheckersLogic original) {
         return new CheckersLogic(original);
     }
